@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Lost and Found Kampus</title>
+</head>
+<body>
+    <h1>Dashboard Lost and Found Kampus</h1>
+
+    <p>Selamat datang di layanan Lost and Found Kampus!</p>
+
+    <h2>Menu Utama</h2>
+
+    <ul>
+        <li><a th:href="@{/api/kehilangan}">Daftar Barang Hilang</a></li>
+        <li><a th:href="@{/api/temuan}">Daftar Barang Temuan</a></li>
+    </ul>
+
+    <form th:action="@{/logout}" method="post">
+        <button type="submit">Logout</button>
+    </form>
+</body>
+</html>
