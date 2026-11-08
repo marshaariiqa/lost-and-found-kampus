@@ -1,6 +1,7 @@
 package lostfound.controller;
 
 import lostfound.dto.KehilanganBarangDTO;
+import lostfound.dto.KehilanganBarangResponseDTO;
 import lostfound.model.KehilanganBarang;
 import lostfound.service.KehilanganBarangService;
 
@@ -19,23 +20,29 @@ public class KehilanganBarangController {
     private KehilanganBarangService kehilanganBarangService;
 
     @GetMapping
-    public ResponseEntity<List<KehilanganBarang>> getAllKehilangan() {
-        return ResponseEntity.ok(
+    public ResponseEntity<List<KehilanganBarangResponseDTO>> getAllKehilangan() {
+
+        List<KehilanganBarangResponseDTO> response =
                 kehilanganBarangService.getAllKehilangan()
-        );
+                        .stream()
+                        .map(kehilanganBarangService::toResponseDTO)
+                        .toList();
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<KehilanganBarang> getKehilanganById(
+    public ResponseEntity<KehilanganBarangResponseDTO> getKehilanganById(
             @PathVariable Long id) {
 
         return kehilanganBarangService.getKehilanganById(id)
+                .map(kehilanganBarangService::toResponseDTO)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<KehilanganBarang> createKehilangan(
+    public ResponseEntity<KehilanganBarangResponseDTO> createKehilangan(
             @RequestBody KehilanganBarangDTO dto,
             Authentication authentication) {
 
@@ -44,11 +51,13 @@ public class KehilanganBarangController {
                         dto, authentication.getName()
                 );
 
-        return ResponseEntity.ok(barang);
+        return ResponseEntity.ok(
+                kehilanganBarangService.toResponseDTO(barang)
+        );
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<KehilanganBarang> updateKehilangan(
+    public ResponseEntity<KehilanganBarangResponseDTO> updateKehilangan(
             @PathVariable Long id,
             @RequestBody KehilanganBarangDTO dto,
             Authentication authentication) {
@@ -58,7 +67,9 @@ public class KehilanganBarangController {
                         id, dto, authentication.getName()
                 );
 
-        return ResponseEntity.ok(barang);
+        return ResponseEntity.ok(
+                kehilanganBarangService.toResponseDTO(barang)
+        );
     }
 
     @DeleteMapping("/{id}")

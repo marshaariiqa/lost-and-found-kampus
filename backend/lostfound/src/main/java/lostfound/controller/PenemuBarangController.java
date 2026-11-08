@@ -1,6 +1,7 @@
 package lostfound.controller;
 
 import lostfound.dto.PenemuBarangDTO;
+import lostfound.dto.PenemuBarangResponseDTO;
 import lostfound.model.PenemuBarang;
 import lostfound.service.PenemuBarangService;
 
@@ -19,23 +20,29 @@ public class PenemuBarangController {
     private PenemuBarangService penemuBarangService;
 
     @GetMapping
-    public ResponseEntity<List<PenemuBarang>> getAllTemuan() {
-        return ResponseEntity.ok(
+    public ResponseEntity<List<PenemuBarangResponseDTO>> getAllTemuan() {
+
+        List<PenemuBarangResponseDTO> response =
                 penemuBarangService.getAllTemuan()
-        );
+                        .stream()
+                        .map(penemuBarangService::toResponseDTO)
+                        .toList();
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PenemuBarang> getTemuanById(
+    public ResponseEntity<PenemuBarangResponseDTO> getTemuanById(
             @PathVariable Long id) {
 
         return penemuBarangService.getTemuanById(id)
+                .map(penemuBarangService::toResponseDTO)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<PenemuBarang> createTemuan(
+    public ResponseEntity<PenemuBarangResponseDTO> createTemuan(
             @RequestBody PenemuBarangDTO dto,
             Authentication authentication) {
 
@@ -44,11 +51,13 @@ public class PenemuBarangController {
                         dto, authentication.getName()
                 );
 
-        return ResponseEntity.ok(barang);
+        return ResponseEntity.ok(
+                penemuBarangService.toResponseDTO(barang)
+        );
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PenemuBarang> updateTemuan(
+    public ResponseEntity<PenemuBarangResponseDTO> updateTemuan(
             @PathVariable Long id,
             @RequestBody PenemuBarangDTO dto,
             Authentication authentication) {
@@ -58,7 +67,9 @@ public class PenemuBarangController {
                         id, dto, authentication.getName()
                 );
 
-        return ResponseEntity.ok(barang);
+        return ResponseEntity.ok(
+                penemuBarangService.toResponseDTO(barang)
+        );
     }
 
     @DeleteMapping("/{id}")

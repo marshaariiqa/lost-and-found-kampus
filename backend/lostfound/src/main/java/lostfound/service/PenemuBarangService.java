@@ -7,6 +7,7 @@ import lostfound.model.Kategori;
 import lostfound.repository.PenemuBarangRepository;
 import lostfound.repository.PenggunaRepository;
 import lostfound.repository.KategoriRepository;
+import lostfound.dto.PenemuBarangResponseDTO;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -91,5 +92,26 @@ public class PenemuBarangService {
         }
 
         penemuBarangRepository.delete(barang);
+    }
+
+    public PenemuBarangResponseDTO toResponseDTO(PenemuBarang barang) {
+
+        PenemuBarangResponseDTO dto = new PenemuBarangResponseDTO();
+
+        dto.setIdPenemu(barang.getIdPenemu());
+        dto.setNamaBarang(barang.getNamaBarang());
+        dto.setDeskripsi(barang.getDeskripsi());
+        dto.setLokasiDitemukan(barang.getLokasiDitemukan());
+        dto.setTanggalDitemukan(barang.getTanggalDitemukan());
+        dto.setUrlGambar(barang.getUrlGambar());
+        dto.setStatus(barang.getStatus().name());
+
+        dto.setIdKategori(barang.getKategori().getIdKategori());
+        dto.setNamaKategori(barang.getKategori().getNamaKategori());
+
+        dto.setIdPengguna(barang.getPengguna().getIdPengguna());
+        dto.setNamaPelapor(barang.getPengguna().getNamaLengkap());
+
+        return dto;
     }
 }

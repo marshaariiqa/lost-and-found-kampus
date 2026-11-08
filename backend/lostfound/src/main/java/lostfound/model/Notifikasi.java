@@ -10,7 +10,7 @@ public class Notifikasi {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_notifikasi")
-    private Long idNotifikasi;
+    private Long idNotifikasi;  
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_pengguna", nullable = false)

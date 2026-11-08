@@ -10,7 +10,7 @@ public class LogAktivitas {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_log")
-    private Long idLog;
+    private Long idLog; 
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_kehilangan")

@@ -7,6 +7,7 @@ import lostfound.model.Kategori;
 import lostfound.repository.KehilanganBarangRepository;
 import lostfound.repository.PenggunaRepository;
 import lostfound.repository.KategoriRepository;
+import lostfound.dto.KehilanganBarangResponseDTO;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -91,5 +92,26 @@ public class KehilanganBarangService {
         }
 
         kehilanganBarangRepository.delete(barang);
+    }
+
+    public KehilanganBarangResponseDTO toResponseDTO(KehilanganBarang barang) {
+
+        KehilanganBarangResponseDTO dto = new KehilanganBarangResponseDTO();
+
+        dto.setIdKehilangan(barang.getIdKehilangan());
+        dto.setNamaBarang(barang.getNamaBarang());
+        dto.setDeskripsiPublik(barang.getDeskripsiPublik());
+        dto.setLokasiKejadian(barang.getLokasiKejadian());
+        dto.setTanggalKejadian(barang.getTanggalKejadian());
+        dto.setUrlGambar(barang.getUrlGambar());
+        dto.setStatus(barang.getStatus().name());
+
+        dto.setIdKategori(barang.getKategori().getIdKategori());
+        dto.setNamaKategori(barang.getKategori().getNamaKategori());
+
+        dto.setIdPengguna(barang.getPengguna().getIdPengguna());
+        dto.setNamaPelapor(barang.getPengguna().getNamaLengkap());
+
+        return dto;
     }
 }
