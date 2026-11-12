@@ -16,6 +16,14 @@
         Email atau password salah.
     </p>
 
+    <p th:if="${param.oauth2Error != null and param.oauth2Error[0] == 'invalid_email'}">
+        Login hanya diperbolehkan menggunakan email kampus UPNVJ.
+    </p>
+
+    <p th:if="${param.oauth2Error != null and param.oauth2Error[0] == 'failed'}">
+        Login dengan Google gagal. Silakan coba lagi.
+    </p>
+
     <p th:if="${param.logout}">
         Kamu berhasil logout.
     </p>

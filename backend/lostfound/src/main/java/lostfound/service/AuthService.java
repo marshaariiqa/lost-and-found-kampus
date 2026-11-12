@@ -32,6 +32,13 @@ public class AuthService {
             throw new IllegalArgumentException("Email wajib diisi");
         }
 
+        if (!email.endsWith("@upnvj.ac.id")
+                && !email.endsWith("@mahasiswa.upnvj.ac.id")) {
+            throw new IllegalArgumentException(
+                "Registrasi hanya diperbolehkan menggunakan email kampus UPNVJ."
+            );
+        }
+
         if (password == null || password.length() < 8) {
             throw new IllegalArgumentException(
                 "Password minimal 8 karakter"

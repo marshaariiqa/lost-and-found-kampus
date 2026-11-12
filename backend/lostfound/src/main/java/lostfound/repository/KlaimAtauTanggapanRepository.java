@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import lostfound.model.StatusInteraksi;
 
 @Repository
 public interface KlaimAtauTanggapanRepository
@@ -28,4 +27,10 @@ public interface KlaimAtauTanggapanRepository
         List<KlaimAtauTanggapan> findByPenemuBarang_IdPenemuAndStatusInteraksi(
                 Long idPenemu,
                 StatusInteraksi statusInteraksi);
+                
+        List<KlaimAtauTanggapan> findAllByOrderByWaktuDibuatDesc();
+
+        List<KlaimAtauTanggapan> findByPenggunaMerespons_IdPenggunaOrderByWaktuDibuatDesc(
+                Integer idPengguna);
+
 }

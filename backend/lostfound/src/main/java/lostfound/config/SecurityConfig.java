@@ -68,6 +68,17 @@ public class SecurityConfig {
                     .userService(customOAuth2UserService)
                 )
                 .defaultSuccessUrl("/dashboard", true)
+                .failureHandler((request, response, exception) -> {
+                    if (exception instanceof org.springframework.security.oauth2.core.OAuth2AuthenticationException oauthException
+                            && "invalid_email".equals(
+                                oauthException.getError().getErrorCode())) {
+
+                        response.sendRedirect("/login?oauth2Error=invalid_email");
+
+                    } else {
+                        response.sendRedirect("/login?oauth2Error=failed");
+                    }
+                })
             )
 
             .logout(logout -> logout

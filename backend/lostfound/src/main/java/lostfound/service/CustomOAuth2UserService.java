@@ -32,7 +32,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String googleId = oAuth2User.getAttribute("sub");
 
         // Memastikan email berasal dari kampus
-        if (email == null || !email.toLowerCase().endsWith("@upnvj.ac.id")) {
+        if (email == null ||
+            !(email.toLowerCase().endsWith("@upnvj.ac.id") ||
+            email.toLowerCase().endsWith("@mahasiswa.upnvj.ac.id"))) {
+
             throw new OAuth2AuthenticationException(
                 new OAuth2Error("invalid_email"),
                 "Login hanya diperbolehkan menggunakan email kampus UPNVJ."
