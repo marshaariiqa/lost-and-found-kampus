@@ -42,6 +42,14 @@ public class PenemuBarang {
     @Column(name = "status", nullable = false)
     private StatusBarang status = StatusBarang.TERSEDIA;
 
+    @Column(name = "waktu_dibuat", nullable = false)
+    private LocalDateTime waktuDibuat;
+
+    @PrePersist
+    protected void onCreate() {
+        waktuDibuat = LocalDateTime.now();
+    }
+
     public PenemuBarang() {
     }
 
@@ -124,5 +132,13 @@ public class PenemuBarang {
 
     public void setStatus(StatusBarang status) {
         this.status = status;
+    }
+
+    public LocalDateTime getWaktuDibuat() {
+        return waktuDibuat;
+    }
+
+    public void setWaktuDibuat(LocalDateTime waktuDibuat) {
+        this.waktuDibuat = waktuDibuat;
     }
 }   

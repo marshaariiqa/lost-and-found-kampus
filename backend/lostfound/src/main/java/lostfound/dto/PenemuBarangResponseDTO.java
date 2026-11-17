@@ -8,6 +8,7 @@ public class PenemuBarangResponseDTO {
     private String namaBarang;
     private String deskripsi;
     private String lokasiDitemukan;
+    private String lokasiPenyimpanan;
     private LocalDateTime tanggalDitemukan;
     private String urlGambar;
     private String status;
@@ -48,6 +49,14 @@ public class PenemuBarangResponseDTO {
 
     public void setLokasiDitemukan(String lokasiDitemukan) {
         this.lokasiDitemukan = lokasiDitemukan;
+    }
+
+    public String getLokasiPenyimpanan() {
+        return lokasiPenyimpanan;
+    }
+
+    public void setLokasiPenyimpanan(String lokasiPenyimpanan) {
+        this.lokasiPenyimpanan = lokasiPenyimpanan;
     }
 
     public LocalDateTime getTanggalDitemukan() {

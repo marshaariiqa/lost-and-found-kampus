@@ -7,8 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface NotifikasiRepository
-        extends JpaRepository<Notifikasi, Long> {
+public interface NotifikasiRepository extends JpaRepository<Notifikasi, Long> {
 
         List<Notifikasi> findByPengguna_IdPenggunaOrderByWaktuDibuatDesc(
                 Integer idPengguna);

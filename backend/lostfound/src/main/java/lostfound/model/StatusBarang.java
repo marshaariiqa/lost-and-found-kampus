@@ -2,5 +2,6 @@ package lostfound.model;
 
 public enum StatusBarang {
     TERSEDIA,
-    SELESAI
+    SELESAI,
+    DIARSIPKAN
 }

@@ -44,10 +44,16 @@ public class SecurityConfig {
             throws Exception {
 
         http
-            .authenticationProvider(authenticationProvider())
+                .authenticationProvider(authenticationProvider())
 
-            .authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/login", "/register", "/css/**", "/js/**", "/images/**").permitAll()
+
+                // Endpoint arsip hanya untuk admin
+                .requestMatchers(
+                    "/api/kehilangan/arsip/**",
+                    "/api/temuan/arsip/**"
+                ).hasRole("ADMIN")
 
                 .requestMatchers("/admin/**").hasRole("ADMIN")
 

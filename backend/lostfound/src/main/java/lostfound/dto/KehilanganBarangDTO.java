@@ -1,15 +1,28 @@
 package lostfound.dto;
 
 import java.time.LocalDateTime;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public class KehilanganBarangDTO {
 
+    @NotNull(message = "Kategori barang wajib dipilih")
     private Integer idKategori;
+
+    @NotBlank(message = "Nama barang wajib diisi")
+    @Size(max = 150, message = "Nama barang maksimal 150 karakter")
     private String namaBarang;
+    
     private String deskripsiPublik;
     private String spesifikasiRahasia;
+    
+    @NotBlank(message = "Lokasi kejadian wajib diisi")
     private String lokasiKejadian;
+
+    @NotNull(message = "Tanggal kejadian wajib diisi")
     private LocalDateTime tanggalKejadian;
+    
     private String urlGambar;
 
     public Integer getIdKategori() {

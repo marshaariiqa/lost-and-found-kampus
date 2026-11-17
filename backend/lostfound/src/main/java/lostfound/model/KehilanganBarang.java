@@ -38,6 +38,14 @@ public class KehilanganBarang {
     @Column(name = "url_gambar")
     private String urlGambar;
 
+    @Column(name = "waktu_dibuat", nullable = false)
+    private LocalDateTime waktuDibuat;
+
+    @PrePersist
+    protected void onCreate() {
+        waktuDibuat = LocalDateTime.now();
+    }
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private StatusBarang status = StatusBarang.TERSEDIA;
@@ -124,5 +132,13 @@ public class KehilanganBarang {
 
     public void setStatus(StatusBarang status) {
         this.status = status;
+    }
+
+    public LocalDateTime getWaktuDibuat() {
+        return waktuDibuat;
+    }
+
+    public void setWaktuDibuat(LocalDateTime waktuDibuat) {
+        this.waktuDibuat = waktuDibuat;
     }
 }

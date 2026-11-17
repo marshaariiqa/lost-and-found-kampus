@@ -1,16 +1,19 @@
 package lostfound.service;
 
 import lostfound.dto.KehilanganBarangDTO;
+import lostfound.dto.KehilanganBarangResponseDTO;
 import lostfound.model.KehilanganBarang;
 import lostfound.model.Pengguna;
 import lostfound.model.Kategori;
+import lostfound.model.StatusBarang;
 import lostfound.repository.KehilanganBarangRepository;
 import lostfound.repository.PenggunaRepository;
 import lostfound.repository.KategoriRepository;
-import lostfound.dto.KehilanganBarangResponseDTO;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +31,41 @@ public class KehilanganBarangService {
     private KategoriRepository kategoriRepository;
 
     public List<KehilanganBarang> getAllKehilangan() {
-        return kehilanganBarangRepository.findAll();
+        return kehilanganBarangRepository.findAll()
+                .stream()
+                .filter(barang -> barang.getStatus() == StatusBarang.TERSEDIA)
+                .toList();
+    }
+
+    public KehilanganBarang restoreKehilangan(Long id) {
+
+        KehilanganBarang barang = kehilanganBarangRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Laporan kehilangan tidak ditemukan"));
+
+        if (barang.getStatus() != StatusBarang.DIARSIPKAN) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Laporan ini tidak berada dalam arsip");
+        }
+
+        barang.setStatus(StatusBarang.TERSEDIA);
+        barang.setWaktuDibuat(java.time.LocalDateTime.now());
+
+        return kehilanganBarangRepository.save(barang);
+    }
+
+    public List<KehilanganBarang> cariKehilangan(String namaBarang) {
+        return kehilanganBarangRepository
+                .findByNamaBarangContainingIgnoreCase(namaBarang)
+                .stream()
+                .filter(barang -> barang.getStatus() == StatusBarang.TERSEDIA)
+                .toList();
+    }
+
+    public List<KehilanganBarang> filterKehilanganByKategori(Integer idKategori) {
+        return kehilanganBarangRepository
+                .findByKategori_IdKategori(idKategori)
+                .stream()
+                .filter(barang -> barang.getStatus() == StatusBarang.TERSEDIA)
+                .toList();
     }
 
     public Optional<KehilanganBarang> getKehilanganById(Long id) {
@@ -42,7 +79,8 @@ public class KehilanganBarangService {
                 .orElseThrow(() -> new RuntimeException("Pengguna tidak ditemukan"));
 
         Kategori kategori = kategoriRepository.findById(dto.getIdKategori())
-                .orElseThrow(() -> new RuntimeException("Kategori tidak ditemukan"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Kategori barang tidak ditemukan"));
 
         KehilanganBarang barang = new KehilanganBarang();
 
@@ -62,14 +100,18 @@ public class KehilanganBarangService {
             Long id, KehilanganBarangDTO dto, String email) {
 
         KehilanganBarang barang = kehilanganBarangRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Laporan kehilangan tidak ditemukan"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Laporan kehilangan tidak ditemukan"));
 
         if (!barang.getPengguna().getEmail().equals(email)) {
-            throw new RuntimeException("Kamu tidak memiliki akses untuk mengubah laporan ini");
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Kamu tidak memiliki akses untuk mengubah laporan ini");
         }
 
         Kategori kategori = kategoriRepository.findById(dto.getIdKategori())
-                .orElseThrow(() -> new RuntimeException("Kategori tidak ditemukan"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Kategori tidak ditemukan"));
 
         barang.setKategori(kategori);
         barang.setNamaBarang(dto.getNamaBarang());
@@ -85,10 +127,13 @@ public class KehilanganBarangService {
     public void deleteKehilangan(Long id, String email) {
 
         KehilanganBarang barang = kehilanganBarangRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Laporan kehilangan tidak ditemukan"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Laporan kehilangan tidak ditemukan"));
 
         if (!barang.getPengguna().getEmail().equals(email)) {
-            throw new RuntimeException("Kamu tidak memiliki akses untuk menghapus laporan ini");
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Kamu tidak memiliki akses untuk menghapus laporan ini");
         }
 
         kehilanganBarangRepository.delete(barang);
@@ -113,5 +158,9 @@ public class KehilanganBarangService {
         dto.setNamaPelapor(barang.getPengguna().getNamaLengkap());
 
         return dto;
+    }
+
+    public List<KehilanganBarang> getArsipKehilangan() {
+        return kehilanganBarangRepository.findByStatus(StatusBarang.DIARSIPKAN);
     }
 }
