@@ -143,9 +143,6 @@ CREATE TABLE klaim_atau_tanggapan (
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
 
-    CONSTRAINT chk_interaksi_laporan
-        CHECK (id_kehilangan IS NOT NULL OR id_penemu IS NOT NULL),
-
     INDEX idx_interaksi_kehilangan (id_kehilangan),
     INDEX idx_interaksi_penemu (id_penemu),
     INDEX idx_interaksi_responder (id_merespons),
