@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Menu titik tiga: Edit / Hapus. Hanya untuk laporan milik sendiri berstatus TERSEDIA.
+     Backend memvalidasi ulang kepemilikan dan status. jenisPath = hilang|temuan -->
+<div th:fragment="kebab(jenisPath, id, nama)" class="kebab">
+  <button type="button" class="kbtn" aria-haspopup="menu" aria-expanded="false" th:aria-label="'Menu laporan ' + ${nama}">
+    <svg class="ic s18"><use href="#i-dots"/></svg>
+  </button>
+  <div class="kmenu" role="menu" hidden="hidden">
+    <a class="kitem" role="menuitem" th:href="@{/laporan/{j}/{id}/edit(j=${jenisPath},id=${id})}"><svg class="ic s16"><use href="#i-edit"/></svg>Edit</a>
+    <form method="post" th:action="@{/laporan/{j}/{id}/hapus(j=${jenisPath},id=${id})}"
+          data-confirm="Laporan ini akan dihapus dan tidak lagi tampil di Jelajahi Barang. Tindakan ini tidak dapat dibatalkan."
+          data-confirm-title="Hapus laporan?" data-confirm-ok="Ya, hapus">
+      <button type="submit" class="kitem danger" role="menuitem"><svg class="ic s16"><use href="#i-trash"/></svg>Hapus</button>
+    </form>
+  </div>
+</div>
+
+<!-- Kartu barang: tinggi seragam (variabel CSS card-h). publik=true untuk landing page. -->
+<article class="icard" th:fragment="itemCard(c, publik)">
+  <th:block th:if="${!publik and c.milikSaya and c.tersedia()}">
+    <div th:replace="~{fragments/ui :: kebab(${c.jenisPath()}, ${c.id}, ${c.nama})}"></div>
+  </th:block>
+  <div class="pic" th:classappend="${!c.hilang()} ? 'found'">
+    <img th:if="${c.urlGambar != null}" th:src="@{${c.urlGambar}}" alt="" loading="lazy"/>
+    <svg th:unless="${c.urlGambar != null}" class="ic s28"><use href="#i-box"/></svg>
+  </div>
+  <div class="bd">
+    <div class="toprow">
+      <span class="badge" th:classappend="${c.hilang()} ? 'b-red' : 'b-green'" th:text="${c.jenisLabel()}">Lost</span>
+      <span class="badge b-gray" th:unless="${c.tersedia()}" th:text="${c.statusLabel}">Selesai</span>
+    </div>
+    <div class="nm" th:text="${c.nama}">Nama barang</div>
+    <div class="hint" th:text="${c.kategori}">Kategori</div>
+    <div class="meta"><svg class="ic s14"><use href="#i-pin"/></svg><span th:text="${c.lokasi}">Lokasi</span></div>
+    <div class="meta"><svg class="ic s14"><use href="#i-cal"/></svg><span th:text="${c.tanggal}">Tanggal</span></div>
+    <a th:if="${!publik and !c.hilang() and c.tersedia() and !c.milikSaya}" class="btn p sm"
+       th:href="@{/barang/{j}/{id}(j=${c.jenisPath()},id=${c.id})}">Ajukan Klaim</a>
+    <a th:unless="${!publik and !c.hilang() and c.tersedia() and !c.milikSaya}" class="btn s sm"
+       th:href="@{/barang/{j}/{id}(j=${c.jenisPath()},id=${c.id})}">Lihat Detail</a>
+  </div>
+</article>
+
+<!-- Badge status laporan (TERSEDIA / SELESAI / DIARSIPKAN) -->
+<span th:fragment="statusBarang(status, label)" class="badge plain"
+      th:classappend="${status == 'TERSEDIA'} ? 'b-blue' : (${status == 'SELESAI'} ? 'b-green' : 'b-gray')"
+      th:text="${label}">Tersedia</span>
+
+<!-- Tab halaman akun: aktif = profil | pengaturan -->
+<nav th:fragment="akunTabs(aktif)" class="tabs-row" aria-label="Bagian akun">
+  <a class="tab" th:classappend="${aktif == 'profil'} ? 'on'" th:href="@{/profil}">Data Diri</a>
+  <a class="tab" th:classappend="${aktif == 'pengaturan'} ? 'on'" th:href="@{/pengaturan}">Pengaturan Akun</a>
+</nav>
+
+<!-- Badge status tampilan laporan (avail / wait / ok / done / no / arch) -->
+<span th:fragment="alurBadge(kode, label)" class="badge plain"
+      th:classappend="${kode == 'avail'} ? 'b-blue' : (${kode == 'wait'} ? 'b-amber' : (${kode == 'ok'} ? 'b-blue' : (${kode == 'done'} ? 'b-green' : (${kode == 'no'} ? 'b-red' : 'b-gray'))))"
+      th:text="${label}">Tersedia</span>
+
+<!-- Badge status klaim/interaksi (kode: wait / ok / done / no) -->
+<span th:fragment="statusKlaim(kode, label)" class="badge plain"
+      th:classappend="${kode == 'wait'} ? 'b-amber' : (${kode == 'ok'} ? 'b-blue' : (${kode == 'done'} ? 'b-green' : 'b-red'))"
+      th:text="${label}">Menunggu</span>
+
+<!-- Empty state; href/label boleh kosong -->
+<div th:fragment="empty(icon, title, desc, href, label)" class="empty">
+  <div class="ico"><svg class="ic s28" aria-hidden="true"><use th:href="'#i-' + ${icon}"/></svg></div>
+  <div class="t" th:text="${title}">Judul</div>
+  <div class="d" th:text="${desc}">Deskripsi</div>
+  <a th:if="${href != null and href != ''}" class="btn p" th:href="@{${href}}" th:text="${label}">Aksi</a>
+</div>
+
+<!-- Pagination. base harus sudah memuat minimal satu parameter query (mis. /barang?q=a). -->
+<nav th:fragment="pager(pg, base)" class="pager" th:if="${pg.totalPages > 1}" aria-label="Halaman">
+  <a class="chip" th:if="${pg.adaSebelumnya()}" th:href="${base} + '&amp;page=' + ${pg.page - 1}">Sebelumnya</a>
+  <a class="chip" th:each="n : ${pg.halaman()}" th:classappend="${n == pg.page} ? 'on'"
+     th:href="${base} + '&amp;page=' + ${n}" th:text="${n}" th:aria-current="${n == pg.page} ? 'page'">1</a>
+  <a class="chip" th:if="${pg.adaBerikutnya()}" th:href="${base} + '&amp;page=' + ${pg.page + 1}">Berikutnya</a>
+</nav>
+
+</body>
+</html>

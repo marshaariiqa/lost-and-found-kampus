@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/mhs :: shell(${k.row.hilang() ? 'Tanggapan Terkirim' : 'Klaim Terkirim'}, 'klaim', ${k.row.hilang() ? 'Tanggapan Terkirim' : 'Konfirmasi Klaim'}, ${k.row.kode}, ~{}, ~{::content})}">
+<body>
+<th:block th:fragment="content">
+  <section class="card x pad stack gap16" style="max-width:560px;margin:0 auto;width:100%;text-align:center">
+    <div class="ok-ring"><svg class="ic"><use href="#i-check"/></svg></div>
+    <h2 class="t-h2" th:text="${k.row.hilang() ? 'Tanggapan berhasil dikirim' : 'Klaim berhasil dikirim'}">Klaim berhasil dikirim</h2>
+    <p class="p14">Terima kasih. Admin akan memeriksanya dan kamu akan mendapat notifikasi begitu ada hasilnya.</p>
+    <div class="sum" style="text-align:left;background:var(--pink-50);border-radius:var(--r-md);padding:4px 16px">
+      <div class="row"><span>Barang</span><span th:text="${k.row.namaBarang}">Nama</span></div>
+      <div class="row"><span>Kode klaim</span><span th:text="${k.row.kode}">#KLM-00001</span></div>
+      <div class="row"><span>Tanggal</span><span th:text="${k.row.diajukan}">-</span></div>
+    </div>
+    <div class="chips" style="justify-content:center">
+      <a class="btn p" th:href="@{/klaim/{id}(id=${k.row.id})}">Lihat Status Klaim</a>
+      <a class="btn s" th:href="@{/klaim}">Kembali</a>
+    </div>
+  </section>
+</th:block>
+</body>
+</html>

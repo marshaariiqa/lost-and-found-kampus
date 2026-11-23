@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/mhs :: shell('Beranda', 'dash', ${'Halo, ' + me.namaDepan}, 'Ini ringkasan laporanmu. Cek juga barang terbaru di kampus.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn p" th:href="@{/lapor}">Lapor Barang</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <section class="stats" aria-label="Ringkasan">
+    <a class="card stat" th:href="@{/laporan(status='active')}">
+      <span class="l">Laporan Aktif</span>
+      <span class="v" th:text="${stat.laporanAktif}">0</span>
+      <span class="hint"><span th:text="${stat.hilangAktif}">0</span> hilang · <span th:text="${stat.temuanAktif}">0</span> temuan</span>
+      <span class="go">Lihat laporan <svg class="ic s14"><use href="#i-chev"/></svg></span>
+    </a>
+    <a class="card stat" th:href="@{/klaim(status='wait')}">
+      <span class="l">Menunggu Verifikasi</span>
+      <span class="v" th:text="${stat.menunggu}">0</span>
+      <span class="hint">Pengajuanmu sedang dicek admin</span>
+      <span class="go">Lihat pengajuan <svg class="ic s14"><use href="#i-chev"/></svg></span>
+    </a>
+    <a class="card stat" th:href="@{/klaim(status='ok')}">
+      <span class="l">Disetujui</span>
+      <span class="v" th:text="${stat.disetujui}">0</span>
+      <span class="hint">Siap diambil di posko</span>
+      <span class="go">Lihat pengajuan <svg class="ic s14"><use href="#i-chev"/></svg></span>
+    </a>
+    <a class="card stat" th:href="@{/laporan(status='done')}">
+      <span class="l">Selesai</span>
+      <span class="v" th:text="${stat.selesai()}">0</span>
+      <span class="hint"><span th:text="${stat.laporanSelesai}">0</span> laporan · <span th:text="${stat.pengajuanSelesai}">0</span> pengajuan</span>
+      <span class="go">Lihat laporan <svg class="ic s14"><use href="#i-chev"/></svg></span>
+    </a>
+  </section>
+
+  <section class="stack gap16" aria-labelledby="terbaru-h">
+    <div class="row-between" style="flex-wrap:wrap">
+      <div class="stack">
+        <h2 class="t-h2" id="terbaru-h">Barang terbaru di kampus</h2>
+        <p class="hint">Pratinjau barang yang baru dilaporkan. Untuk mencari dan memfilter, buka Jelajahi Barang.</p>
+      </div>
+      <a class="btn s sm" th:href="@{/barang}"><svg class="ic s16"><use href="#i-search"/></svg>Jelajahi Semua Barang</a>
+    </div>
+
+    <div class="cards" th:if="${!terbaru.isEmpty()}">
+      <th:block th:each="c : ${terbaru}"><th:block th:replace="~{fragments/ui :: itemCard(${c}, false)}"></th:block></th:block>
+    </div>
+
+    <div class="card" th:if="${terbaru.isEmpty()}">
+      <div th:replace="~{fragments/ui :: empty('box', 'Belum ada barang dilaporkan', 'Begitu ada laporan barang hilang atau temuan yang masih tersedia, barangnya muncul di sini.', '/lapor', 'Lapor Barang')}"></div>
+    </div>
+  </section>
+</th:block>
+</body>
+</html>

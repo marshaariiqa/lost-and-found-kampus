@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/mhs :: shell(${d.hilang() ? 'Isi Detail Temuan' : 'Ajukan Klaim'}, 'jelajah', ${d.hilang() ? 'Isi Detail Temuan' : 'Ajukan Klaim'}, ${d.hilang() ? 'Lengkapi informasi berikut untuk membantu pemilik mengenali barangnya.' : 'Jelaskan kepemilikanmu. Admin akan mencocokkannya dengan data barang.'}, ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn s" th:href="@{/barang/{j}/{id}(j=${d.jenisPath()},id=${d.id})}"><svg class="ic s16" style="transform:rotate(90deg)"><use href="#i-chev"/></svg>Kembali</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <div class="det wide">
+    <form th:action="@{/klaim/baru/{j}/{id}(j=${d.jenisPath()},id=${d.id})}" method="post" enctype="multipart/form-data"
+          data-validate="data-validate" class="card x pad stack gap16">
+      <h2 class="t-h2" th:text="${d.hilang() ? 'Detail barang yang kamu temukan' : 'Isi data klaim'}">Judul</h2>
+
+      <!-- Saya Menemukan Ini (barang hilang) -->
+      <th:block th:if="${d.hilang()}">
+        <div class="kv-grid">
+          <div class="field">
+            <label class="lbl" for="lokasi">Lokasi ditemukan<span class="req">*</span></label>
+            <input id="lokasi" name="lokasi" class="in" th:classappend="${errors['lokasi'] != null} ? 'err'" type="text" required="required" maxlength="255" placeholder="Contoh: Kantin FIK" th:value="${f.lokasi}"/>
+            <span class="err-msg" th:if="${errors['lokasi'] != null}" th:text="${errors['lokasi']}">Error</span>
+          </div>
+          <div class="field">
+            <label class="lbl" for="tanggal">Tanggal ditemukan<span class="req">*</span></label>
+            <input id="tanggal" name="tanggal" class="in" th:classappend="${errors['tanggal'] != null} ? 'err'" type="date" required="required" th:max="${hariIni}" th:value="${f.tanggal}"/>
+            <span class="err-msg" th:if="${errors['tanggal'] != null}" th:text="${errors['tanggal']}">Error</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl" for="kondisi">Deskripsi atau kondisi barang<span class="req">*</span></label>
+          <textarea id="kondisi" name="kondisi" class="in" th:classappend="${errors['kondisi'] != null} ? 'err'" rows="3" required="required"
+                    placeholder="Contoh: warna, ukuran, kondisi, isi yang terlihat" th:text="${f.kondisi}"></textarea>
+          <span class="err-msg" th:if="${errors['kondisi'] != null}" th:text="${errors['kondisi']}">Error</span>
+        </div>
+        <div class="field">
+          <span class="lbl">Lokasi penyimpanan</span>
+          <input class="in" type="text" readonly="readonly" th:value="${posko.lokasi}"/>
+          <span class="hint">Setelah tanggapanmu disetujui, serahkan barangnya ke posko ini.</span>
+        </div>
+      </th:block>
+
+      <!-- Ajukan Klaim (barang temuan) -->
+      <div class="field" th:unless="${d.hilang()}">
+        <label class="lbl" for="catatan">Ciri-ciri barang<span class="req">*</span></label>
+        <textarea id="catatan" name="catatan" class="in" th:classappend="${errors['catatan'] != null} ? 'err'" rows="4" required="required"
+                  placeholder="Sebutkan ciri khusus yang hanya pemiliknya yang tahu, mis. isi, gantungan, stiker, atau goresan" th:text="${f.catatan}"></textarea>
+        <span class="err-msg" th:if="${errors['catatan'] != null}" th:text="${errors['catatan']}">Error</span>
+      </div>
+
+      <div class="field">
+        <span class="lbl" th:text="${d.hilang() ? 'Foto barang yang ditemukan' : 'Foto bukti kepemilikan'}">Foto</span>
+        <span class="hint" th:text="${d.hilang() ? 'Opsional. PNG/JPG maks. 5 MB.' : 'Opsional, mis. foto lama bersama barang atau struk pembelian. PNG/JPG maks. 5 MB.'}">hint</span>
+        <label class="drop" th:classappend="${errors['fotoBukti'] != null} ? 'err'">
+          <span class="ic-up"><svg class="ic"><use href="#i-up"/></svg></span>
+          <span class="nm" data-default="Klik untuk memilih foto">Klik untuk memilih foto</span>
+          <input type="file" name="fotoBukti" accept="image/png,image/jpeg"/>
+        </label>
+        <span class="err-msg file-msg" th:if="${errors['fotoBukti'] != null}" th:text="${errors['fotoBukti']}">Error</span>
+      </div>
+
+      <div class="field">
+        <span class="lbl">Foto KTM<span class="req">*</span> <span class="hint">(wajib, PNG/JPG maks. 5 MB)</span></span>
+        <label class="drop" th:classappend="${errors['fotoKtm'] != null} ? 'err'">
+          <span class="ic-up"><svg class="ic"><use href="#i-up"/></svg></span>
+          <span class="nm" data-default="Klik untuk mengunggah foto KTM">Klik untuk mengunggah foto KTM</span>
+          <span class="hint">Pastikan nama dan foto pada KTM terbaca jelas</span>
+          <input type="file" name="fotoKtm" accept="image/png,image/jpeg" required="required"/>
+        </label>
+        <span class="err-msg file-msg" th:if="${errors['fotoKtm'] != null}" th:text="${errors['fotoKtm']}">Foto KTM wajib diunggah</span>
+        <span class="hint">Foto KTM bersifat privat dan hanya bisa dibuka olehmu dan admin.</span>
+      </div>
+
+      <div class="field">
+        <span class="lbl">Kontak yang dibagikan ke admin</span>
+        <input class="in" type="text" readonly="readonly" th:value="${me.telepon != null ? me.telepon + ' · ' + me.email : me.email}"/>
+        <span class="hint" th:if="${me.telepon == null}">Belum ada nomor telepon. <a class="link" th:href="@{/pengaturan#data}">Tambahkan di Pengaturan Akun</a> agar admin mudah menghubungimu.</span>
+      </div>
+
+      <div class="field">
+        <label class="checkline" th:classappend="${errors['pernyataan'] != null} ? 'err'">
+          <input type="checkbox" name="pernyataan" required="required" th:checked="${f.setuju}"/>
+          <span>Saya menyatakan data dan bukti yang saya kirim benar.</span>
+        </label>
+        <span class="err-msg" data-err-for="pernyataan" role="alert" th:hidden="${errors['pernyataan'] == null}"
+              th:text="${errors['pernyataan'] != null ? errors['pernyataan'] : 'Silakan centang persetujuan terlebih dahulu sebelum mengirim pengajuan.'}">Silakan centang persetujuan terlebih dahulu sebelum mengirim pengajuan.</span>
+      </div>
+
+      <div class="form-actions">
+        <span class="hint">Kolom bertanda * wajib diisi.</span>
+        <a class="btn s" th:href="@{/barang/{j}/{id}(j=${d.jenisPath()},id=${d.id})}">Batal</a>
+        <button type="submit" class="btn p" data-loading="Mengirim..." th:text="${d.hilang() ? 'Kirim Tanggapan' : 'Kirim Klaim'}">Kirim Klaim</button>
+      </div>
+    </form>
+
+    <aside class="stack gap16">
+      <div class="card pad stack gap12">
+        <span class="cap" th:text="${d.hilang() ? 'Barang yang kamu tanggapi' : 'Barang yang kamu klaim'}">Barang</span>
+        <div class="ph" style="min-height:120px;max-height:180px" th:if="${d.urlGambar != null}"><img th:src="@{${d.urlGambar}}" th:alt="'Foto ' + ${d.nama}"/></div>
+        <div class="h3" th:text="${d.nama}">Nama barang</div>
+        <div class="chips">
+          <span class="badge" th:classappend="${d.hilang()} ? 'b-red' : 'b-green'" th:text="${d.jenisLabel()}">Found</span>
+          <span class="hint" th:text="${d.kode}">#TMN-00001</span>
+        </div>
+        <div class="kv"><div class="k" th:text="${d.hilang() ? 'Lokasi kejadian' : 'Lokasi ditemukan'}">Lokasi</div><div class="v" th:text="${d.lokasi}">-</div></div>
+        <div class="kv"><div class="k" th:text="${d.hilang() ? 'Tanggal kejadian' : 'Tanggal ditemukan'}">Tanggal</div><div class="v" th:text="${d.tanggal}">-</div></div>
+      </div>
+      <div class="side-card">
+        <h4>Yang terjadi setelah ini</h4>
+        <ul>
+          <li>Admin memeriksa bukti dalam <b th:text="${posko.tenggatHari}">2</b> hari.</li>
+          <li>Kamu mendapat notifikasi saat statusnya berubah.</li>
+          <li th:if="${!d.hilang()}">Jika disetujui, ambil barang di <b th:text="${posko.lokasi}">Posko FIK</b> dengan membawa KTM asli.</li>
+          <li th:if="${d.hilang()}">Jika disetujui, serahkan barang ke <b th:text="${posko.lokasi}">Posko FIK</b> agar sampai ke pemiliknya.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/adm :: shell('Riwayat Penyerahan', 'riwayat', 'Riwayat Penyerahan', 'Barang yang sudah diserahkan kepada pemohon.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn s" th:href="@{/admin/ekspor/riwayat(q=${q},jenis=${jenisSel})}" download="download"><svg class="ic s16"><use href="#i-download"/></svg>Ekspor Excel</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <div class="row-between" style="flex-wrap:wrap">
+    <div class="chips">
+      <a class="chip" th:classappend="${jenisSel == ''} ? 'on'" th:href="@{/admin/riwayat(q=${q})}">Semua</a>
+      <a class="chip" th:classappend="${jenisSel == 'temuan'} ? 'on'" th:href="@{/admin/riwayat(jenis='temuan',q=${q})}">Klaim barang temuan</a>
+      <a class="chip" th:classappend="${jenisSel == 'hilang'} ? 'on'" th:href="@{/admin/riwayat(jenis='hilang',q=${q})}">Tanggapan kehilangan</a>
+    </div>
+    <form method="get" th:action="@{/admin/riwayat}" role="search">
+      <input type="hidden" name="jenis" th:value="${jenisSel}"/>
+      <label class="search"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Cari</span>
+        <input class="in" type="search" name="q" th:value="${q}" placeholder="Cari barang atau penerima"/></label>
+    </form>
+  </div>
+
+  <section class="card x" th:if="${!items.items.isEmpty()}">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Kode</th><th>Barang</th><th>Penerima</th><th>Tgl Serah</th><th class="hide-md">Petugas</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr th:each="r : ${items.items}">
+            <td th:text="${r.kode}">#KLM-00001</td>
+            <td><div class="strong" th:text="${r.namaBarang}">Nama</div><div class="hint" th:text="${r.kodeBarang + ' · ' + r.jenisInteraksi}">kode</div></td>
+            <td><div th:text="${r.pemohon}">Nama</div><div class="hint" th:text="${r.emailPemohon}">email</div></td>
+            <td th:text="${r.waktuSelesai}">-</td>
+            <td th:text="${r.diverifikasiOleh}">-</td>
+            <td><span class="badge plain b-green">Selesai</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-foot"><span class="hint">Menampilkan <span th:text="${items.from}">1</span>–<span th:text="${items.to}">10</span> dari <span th:text="${items.total}">0</span> penyerahan</span></div>
+  </section>
+
+  <div class="card" th:if="${items.items.isEmpty()}">
+    <div th:replace="~{fragments/ui :: empty('hist', 'Belum ada riwayat penyerahan', 'Penyerahan barang yang sudah selesai akan tercatat di sini.', '', '')}"></div>
+  </div>
+
+  <th:block th:replace="~{fragments/ui :: pager(${items}, @{/admin/riwayat(q=${q},jenis=${jenisSel})})}"></th:block>
+</th:block>
+</body>
+</html>

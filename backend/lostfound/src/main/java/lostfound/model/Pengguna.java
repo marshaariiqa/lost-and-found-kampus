@@ -34,6 +34,9 @@ public class Pengguna {
     @Column(name = "google_id", unique = true, length = 255)
     private String googleId;
 
+    @Column(name = "aktif", nullable = false)
+    private boolean aktif = true;
+
     public Pengguna() {
     }
 
@@ -99,5 +102,13 @@ public class Pengguna {
 
     public void setGoogleId(String googleId) {
         this.googleId = googleId;
+    }
+
+    public boolean isAktif() {
+        return aktif;
+    }
+
+    public void setAktif(boolean aktif) {
+        this.aktif = aktif;
     }
 }

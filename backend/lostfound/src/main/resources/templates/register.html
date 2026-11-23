@@ -1,45 +1,53 @@
 <!DOCTYPE html>
 <html lang="id" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrasi - Lost and Found Kampus</title>
-</head>
+<head th:replace="~{fragments/common :: head('Daftar')}"></head>
 <body>
-    <h1>Registrasi Akun</h1>
-    <p>Buat akun untuk menggunakan layanan Lost and Found Kampus.</p>
+<div th:replace="~{fragments/icons :: sprite}"></div>
+<div class="auth">
+  <aside th:replace="~{fragments/auth :: panel('Bergabung dengan FindUp!', 'Buat akun untuk melaporkan barang hilang, melaporkan barang temuan, dan mengajukan klaim.')}"></aside>
+  <main class="rp">
+    <div class="box wide stack gap16">
+      <div class="stack gap8">
+        <h1>Buat akun</h1>
+        <p class="p14">Isi data dirimu. Kolom bertanda * wajib diisi.</p>
+      </div>
 
-    <p th:if="${error}" th:text="${error}"></p>
+      <div class="alert bad" th:if="${error != null}" role="alert" th:text="${error}">Error</div>
 
-    <form th:action="@{/register}" th:object="${pengguna}" method="post">
-
-        <div>
-            <label for="namaLengkap">Nama Lengkap</label>
-            <input type="text" id="namaLengkap"
-                   th:field="*{namaLengkap}" required>
+      <form th:action="@{/register}" method="post" th:object="${pengguna}" data-validate="data-validate" class="stack gap16">
+        <div class="field">
+          <label class="lbl" for="namaLengkap">Nama lengkap<span class="req">*</span></label>
+          <input id="namaLengkap" name="namaLengkap" class="in" type="text" required="required" maxlength="150" placeholder="Nama sesuai KTM" th:value="*{namaLengkap}"/>
         </div>
-
-        <div>
-            <label for="email">Email</label>
-            <input type="email" id="email"
-                   th:field="*{email}" required>
+        <div class="field">
+          <label class="lbl" for="email">Email<span class="req">*</span></label>
+          <input id="email" name="email" class="in" type="email" required="required" maxlength="150" autocomplete="email" placeholder="nama@email.com" th:value="*{email}"/>
         </div>
-
-        <div>
-            <label for="nomorTelepon">Nomor Telepon</label>
-            <input type="tel" id="nomorTelepon"
-                   th:field="*{nomorTelepon}">
+        <div class="field">
+          <label class="lbl" for="nomorTelepon">Nomor telepon</label>
+          <input id="nomorTelepon" name="nomorTelepon" class="in" type="tel" maxlength="20" placeholder="08xxxxxxxxxx" th:value="*{nomorTelepon}"/>
+          <span class="hint">Opsional. Dipakai admin untuk menghubungimu saat verifikasi klaim.</span>
         </div>
-
-        <div>
-            <label for="kataSandi">Password</label>
-            <input type="password" id="kataSandi"
-                   th:field="*{kataSandi}" required minlength="8">
+        <div class="field">
+          <label class="lbl" for="kataSandi">Kata sandi<span class="req">*</span></label>
+          <div class="pw">
+            <input id="kataSandi" name="kataSandi" class="in" type="password" required="required" minlength="8" autocomplete="new-password" placeholder="Minimal 8 karakter" data-match-source="data-match-source"/>
+            <button type="button" data-eye="data-eye" aria-label="Tampilkan kata sandi"><svg class="ic s18"><use href="#i-eye"/></svg></button>
+          </div>
         </div>
+        <div class="field">
+          <label class="lbl" for="konfirmasi">Konfirmasi kata sandi<span class="req">*</span></label>
+          <input id="konfirmasi" name="konfirmasi" class="in" type="password" required="required" autocomplete="new-password" placeholder="Ulangi kata sandi" data-match-target="data-match-target"/>
+          <span class="err-msg" data-match-hint="data-match-hint"></span>
+        </div>
+        <button type="submit" class="btn p w" data-loading="Membuat akun...">Daftar</button>
+      </form>
 
-        <button type="submit">Daftar</button>
-    </form>
-
-    <p>Sudah punya akun? <a th:href="@{/login}">Login di sini</a></p>
+      <p class="p14" style="text-align:center">Sudah punya akun? <a class="link" th:href="@{/login}">Masuk</a></p>
+    </div>
+  </main>
+</div>
+<div id="flash" hidden="hidden"></div>
+<div id="toast-root" aria-live="polite"></div>
 </body>
 </html>

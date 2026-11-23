@@ -24,6 +24,9 @@ public class SecurityConfig {
     @Autowired
     private PenggunaDetailsService penggunaDetailsService;
 
+    @Autowired
+    private LoginSuccessHandler loginSuccessHandler;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -47,7 +50,9 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider())
 
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/register", "/css/**", "/js/**", "/images/**").permitAll()
+                .requestMatchers("/", "/login", "/register", "/register/sukses",
+                    "/css/**", "/js/**", "/images/**", "/uploads/barang/**",
+                    "/favicon.ico", "/error").permitAll()
 
                 // Endpoint arsip hanya untuk admin
                 .requestMatchers(
@@ -57,6 +62,10 @@ public class SecurityConfig {
 
                 .requestMatchers("/admin/**").hasRole("ADMIN")
 
+                // Halaman mahasiswa
+                .requestMatchers("/barang/**", "/lapor/**", "/laporan/**",
+                    "/klaim/**", "/notifikasi/**").hasRole("MAHASISWA")
+
                 .anyRequest().authenticated()
             )
 
@@ -64,7 +73,7 @@ public class SecurityConfig {
                 .loginPage("/login")
                 .usernameParameter("username")
                 .passwordParameter("password")
-                .defaultSuccessUrl("/dashboard", true)
+                .successHandler(loginSuccessHandler)
                 .permitAll()
             )
 
@@ -73,7 +82,7 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo
                     .userService(customOAuth2UserService)
                 )
-                .defaultSuccessUrl("/dashboard", true)
+                .successHandler(loginSuccessHandler)
                 .failureHandler((request, response, exception) -> {
                     if (exception instanceof org.springframework.security.oauth2.core.OAuth2AuthenticationException oauthException
                             && "invalid_email".equals(
@@ -81,14 +90,28 @@ public class SecurityConfig {
 
                         response.sendRedirect("/login?oauth2Error=invalid_email");
 
+                    } else if (exception instanceof org.springframework.security.oauth2.core.OAuth2AuthenticationException oauthException2
+                            && "account_disabled".equals(
+                                oauthException2.getError().getErrorCode())) {
+
+                        response.sendRedirect("/login?oauth2Error=disabled");
+
                     } else {
                         response.sendRedirect("/login?oauth2Error=failed");
                     }
                 })
             )
 
+            .sessionManagement(session -> session
+                // Sesi habis (cookie lama tidak valid lagi) -> login dengan pesan jelas
+                .invalidSessionUrl("/login?expired")
+            )
+
             .logout(logout -> logout
                 .logoutSuccessUrl("/login?logout")
+                .invalidateHttpSession(true)
+                // Hapus cookie lama agar tidak dikira "sesi berakhir" setelah keluar
+                .deleteCookies("JSESSIONID")
                 .permitAll()
             );
 

@@ -1,12 +1,17 @@
 package lostfound.controller;
 
+import lostfound.dto.KlaimAtauTanggapanResponseDTO;
 import lostfound.model.KlaimAtauTanggapan;
+import lostfound.service.FileStorageService;
+import lostfound.service.KlaimAtauTanggapanMapper;
 import lostfound.service.KlaimAtauTanggapanService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/interaksi")
@@ -15,84 +20,80 @@ public class KlaimAtauTanggapanController {
     @Autowired
     private KlaimAtauTanggapanService klaimService;
 
-    // Mahasiswa mengajukan tanggapan pada laporan kehilangan
-    @PostMapping("/kehilangan/{idKehilangan}")
-    public ResponseEntity<KlaimAtauTanggapan> ajukanTanggapanKehilangan(
+    @Autowired
+    private KlaimAtauTanggapanMapper klaimMapper;
+
+    @Autowired
+    private FileStorageService fileStorageService;
+
+    // Mahasiswa mengajukan tanggapan pada laporan kehilangan.
+    // Foto KTM WAJIB dan dikirim sebagai file (multipart), bukan string path.
+    @PostMapping(value = "/kehilangan/{idKehilangan}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<KlaimAtauTanggapanResponseDTO> ajukanTanggapanKehilangan(
             @PathVariable Long idKehilangan,
             @RequestParam String catatanBukti,
-            @RequestParam(required = false) String fotoKtm,
+            @RequestParam("fotoKtm") MultipartFile fotoKtm,
             Authentication authentication) {
 
-        KlaimAtauTanggapan interaksi =klaimService.ajukanTanggapanKehilangan(
-            idKehilangan,
-            catatanBukti,
-            fotoKtm,
-            authentication
-        );
-
-        return ResponseEntity.ok(interaksi);
+        String pathKtm = fileStorageService.simpanFotoKtm(fotoKtm);
+        try {
+            KlaimAtauTanggapan interaksi = klaimService.ajukanTanggapanKehilangan(
+                    idKehilangan, catatanBukti, pathKtm, authentication);
+            return ResponseEntity.ok(klaimMapper.toDTO(interaksi));
+        } catch (RuntimeException e) {
+            fileStorageService.hapus(pathKtm);
+            throw e;
+        }
     }
 
-    // Mahasiswa mengajukan klaim pada laporan barang temuan
-    @PostMapping("/temuan/{idPenemu}")
-    public ResponseEntity<KlaimAtauTanggapan> ajukanKlaimTemuan(
+    // Mahasiswa mengajukan klaim pada laporan barang temuan (foto KTM wajib)
+    @PostMapping(value = "/temuan/{idPenemu}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<KlaimAtauTanggapanResponseDTO> ajukanKlaimTemuan(
             @PathVariable Long idPenemu,
             @RequestParam String catatanBukti,
-            @RequestParam(required = false) String fotoKtm,
+            @RequestParam("fotoKtm") MultipartFile fotoKtm,
             Authentication authentication) {
 
-        KlaimAtauTanggapan interaksi = klaimService.ajukanKlaimTemuan(
-            idPenemu,
-            catatanBukti,
-            fotoKtm,
-            authentication
-        );
-
-        return ResponseEntity.ok(interaksi);
+        String pathKtm = fileStorageService.simpanFotoKtm(fotoKtm);
+        try {
+            KlaimAtauTanggapan interaksi = klaimService.ajukanKlaimTemuan(
+                    idPenemu, catatanBukti, pathKtm, authentication);
+            return ResponseEntity.ok(klaimMapper.toDTO(interaksi));
+        } catch (RuntimeException e) {
+            fileStorageService.hapus(pathKtm);
+            throw e;
+        }
     }
 
     // Admin menyetujui interaksi
     @PutMapping("/{idInteraksi}/setujui")
-    public ResponseEntity<KlaimAtauTanggapan> setujuiInteraksi(
+    public ResponseEntity<KlaimAtauTanggapanResponseDTO> setujuiInteraksi(
             @PathVariable Long idInteraksi,
             Authentication authentication) {
 
-        KlaimAtauTanggapan interaksi = klaimService.setujuiInteraksi(
-            idInteraksi,
-            authentication
-        );
-
-        return ResponseEntity.ok(interaksi);
+        return ResponseEntity.ok(klaimMapper.toDTO(
+                klaimService.setujuiInteraksi(idInteraksi, authentication)));
     }
 
     // Admin menolak interaksi
     @PutMapping("/{idInteraksi}/tolak")
-    public ResponseEntity<KlaimAtauTanggapan> tolakInteraksi(
+    public ResponseEntity<KlaimAtauTanggapanResponseDTO> tolakInteraksi(
             @PathVariable Long idInteraksi,
             @RequestParam String alasanPenolakan,
             Authentication authentication) {
 
-        KlaimAtauTanggapan interaksi = klaimService.tolakInteraksi(
-            idInteraksi,
-            alasanPenolakan,
-            authentication
-        );
-
-        return ResponseEntity.ok(interaksi);
+        return ResponseEntity.ok(klaimMapper.toDTO(
+                klaimService.tolakInteraksi(idInteraksi, alasanPenolakan, authentication)));
     }
 
     // Admin menyelesaikan penyerahan barang
     @PutMapping("/{idInteraksi}/selesaikan")
-    public ResponseEntity<KlaimAtauTanggapan> selesaikanInteraksi(
+    public ResponseEntity<KlaimAtauTanggapanResponseDTO> selesaikanInteraksi(
             @PathVariable Long idInteraksi,
             Authentication authentication) {
 
-        KlaimAtauTanggapan interaksi = klaimService.selesaikanInteraksi(
-            idInteraksi,
-            authentication
-        );
-
-        return ResponseEntity.ok(interaksi);
+        return ResponseEntity.ok(klaimMapper.toDTO(
+                klaimService.selesaikanInteraksi(idInteraksi, authentication)));
     }
 
     @GetMapping

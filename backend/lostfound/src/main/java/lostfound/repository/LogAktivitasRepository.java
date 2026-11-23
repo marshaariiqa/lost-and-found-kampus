@@ -12,4 +12,6 @@ public interface LogAktivitasRepository extends JpaRepository<LogAktivitas, Long
     List<LogAktivitas> findByKehilanganBarang_IdKehilanganOrderByWaktuCatatDesc(Long idKehilangan);
 
     List<LogAktivitas> findByPenemuBarang_IdPenemuOrderByWaktuCatatDesc(Long idPenemu);
+
+    List<LogAktivitas> findTop6ByOrderByWaktuCatatDesc();
 }

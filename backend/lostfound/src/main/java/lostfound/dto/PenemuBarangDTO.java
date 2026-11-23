@@ -14,6 +14,7 @@ public class PenemuBarangDTO {
     @Size(max = 150, message = "Nama barang maksimal 150 karakter")
     private String namaBarang;
 
+    @NotBlank(message = "Deskripsi barang wajib diisi")
     private String deskripsi;
 
     @NotBlank(message = "Lokasi ditemukan wajib diisi")
@@ -23,6 +24,18 @@ public class PenemuBarangDTO {
     private LocalDateTime tanggalDitemukan;
 
     private String urlGambar;
+
+    // Opsional. Jika kosong, backend memakai "Posko FIK".
+    @Size(max = 255, message = "Lokasi penyimpanan maksimal 255 karakter")
+    private String lokasiPenyimpanan;
+
+    public String getLokasiPenyimpanan() {
+        return lokasiPenyimpanan;
+    }
+
+    public void setLokasiPenyimpanan(String lokasiPenyimpanan) {
+        this.lokasiPenyimpanan = lokasiPenyimpanan;
+    }
 
     public Integer getIdKategori() {
         return idKategori;

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/mhs :: shell('Status Pengajuan', 'klaim', 'Status Klaim', ${k.row.kode}, ~{}, ~{::content})}">
+<body>
+<th:block th:fragment="content">
+  <div class="det wide">
+    <section class="card x pad stack gap16">
+      <div class="stack gap12" style="align-items:flex-start">
+        <th:block th:replace="~{fragments/ui :: statusKlaim(${k.row.statusCode}, ${k.row.statusLabel})}"></th:block>
+        <h2 class="t-h2" th:if="${k.row.menunggu()}">Pengajuanmu sedang diverifikasi</h2>
+        <h2 class="t-h2" th:if="${k.row.disetujui()}">Pengajuanmu disetujui</h2>
+        <h2 class="t-h2" th:if="${k.row.selesai()}">Barang sudah diserahkan</h2>
+        <h2 class="t-h2" th:if="${k.row.ditolak()}">Pengajuanmu ditolak</h2>
+        <p class="p14" th:if="${k.row.menunggu()}">Admin sedang mencocokkan bukti yang kamu kirim. Kamu akan mendapat notifikasi saat ada keputusan.</p>
+        <p class="p14" th:if="${k.row.disetujui()}">Buktimu cocok. Silakan ambil barang di posko dengan membawa KTM asli.</p>
+        <p class="p14" th:if="${k.row.selesai()}">Proses ini sudah tuntas dan barang telah diserahkan oleh admin.</p>
+        <p class="p14" th:if="${k.row.ditolak()}">Buktimu belum cukup untuk disetujui. Lihat alasan dari admin di bawah.</p>
+      </div>
+
+      <div class="notice bad" th:if="${k.row.ditolak() and k.row.alasanPenolakan != null}">
+        <svg class="ic"><use href="#i-info"/></svg>
+        <span><b>Catatan admin:</b> <span th:text="${k.row.alasanPenolakan}">Alasan</span></span>
+      </div>
+
+      <div class="notice warn" th:if="${k.row.disetujui() and k.statusBarang == 'DIARSIPKAN'}">
+        <svg class="ic"><use href="#i-info"/></svg>
+        <span>Laporan barang ini <b>telah diarsipkan</b> karena proses penyerahan tidak dilanjutkan selama 7 hari. Riwayat pengajuanmu tetap tersimpan. Hubungi admin FindUp! bila ingin melanjutkan.</span>
+      </div>
+
+      <div class="card pad stack gap8" th:if="${k.row.disetujui() and k.statusBarang != 'DIARSIPKAN'}" style="background:var(--pink-50);border-color:var(--pink-200)">
+        <span class="cap">Cara mengambil barang</span>
+        <div class="sum">
+          <div class="row"><span>Lokasi</span><span th:text="${posko.lokasi}">Posko FIK</span></div>
+          <div class="row"><span>Jam operasional</span><span th:text="${posko.jam}">08.00 - 16.00 WIB</span></div>
+          <div class="row"><span>Yang dibawa</span><span>KTM asli</span></div>
+          <div class="row" th:if="${posko.adaEmail()}"><span>Kontak</span><span th:text="${posko.email}">email</span></div>
+        </div>
+      </div>
+
+      <div class="sum">
+        <div class="row"><span>Barang</span><span th:text="${k.row.namaBarang}">Nama</span></div>
+        <div class="row"><span>Kode barang</span><span th:text="${k.row.kodeBarang}">#HLG-00001</span></div>
+        <div class="row"><span>Jenis pengajuan</span><span th:text="${k.row.jenisInteraksi}">Klaim</span></div>
+        <div class="row"><span>Diajukan</span><span th:text="${k.row.diajukan}">-</span></div>
+        <div class="row" th:if="${k.row.menunggu() and k.row.tenggat != '-'}"><span>Tenggat tanggapan</span><span th:text="${k.row.tenggat}">-</span></div>
+        <div class="row" th:if="${k.row.waktuVerifikasi != '-'}"><span>Diverifikasi</span><span th:text="${k.row.waktuVerifikasi}">-</span></div>
+        <div class="row" th:if="${k.row.waktuSelesai != '-'}"><span>Diserahkan</span><span th:text="${k.row.waktuSelesai}">-</span></div>
+      </div>
+
+      <div class="kv"><div class="k" th:text="${k.row.hilang() ? 'Detail temuan yang kamu kirim' : 'Catatan bukti yang kamu kirim'}">Catatan</div><p class="p14" style="white-space:pre-wrap" th:text="${k.catatanBukti}">-</p></div>
+
+      <div class="chips">
+        <a class="btn p" th:if="${k.row.ditolak() and k.barangTersedia}"
+           th:href="@{/klaim/baru/{j}/{id}(j=${k.row.hilang() ? 'hilang' : 'temuan'},id=${k.row.idBarang})}">Ajukan Ulang</a>
+        <a class="btn" th:classappend="${k.row.ditolak() and k.barangTersedia} ? 's' : 'p'" th:href="@{/klaim}">Kembali</a>
+        <a class="btn g" th:href="@{/barang/{j}/{id}(j=${k.row.hilang() ? 'hilang' : 'temuan'},id=${k.row.idBarang})}">Lihat Barang</a>
+      </div>
+    </section>
+
+    <aside class="stack gap16">
+      <div class="card pad stack gap12">
+        <span class="cap">Barang</span>
+        <div class="ph" style="min-height:140px;max-height:200px" th:if="${k.urlGambarBarang != null}"><img th:src="@{${k.urlGambarBarang}}" th:alt="'Foto ' + ${k.row.namaBarang}"/></div>
+        <div class="h3" th:text="${k.row.namaBarang}">Nama</div>
+        <div class="kv"><div class="k">Kategori</div><div class="v" th:text="${k.kategori}">-</div></div>
+        <div class="kv"><div class="k" th:text="${k.row.hilang() ? 'Lokasi kejadian' : 'Lokasi ditemukan'}">Lokasi</div><div class="v" th:text="${k.lokasiBarang}">-</div></div>
+      </div>
+    </aside>
+  </div>
+</th:block>
+</body>
+</html>

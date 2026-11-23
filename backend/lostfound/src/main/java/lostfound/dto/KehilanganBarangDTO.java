@@ -14,6 +14,7 @@ public class KehilanganBarangDTO {
     @Size(max = 150, message = "Nama barang maksimal 150 karakter")
     private String namaBarang;
     
+    @NotBlank(message = "Deskripsi publik wajib diisi")
     private String deskripsiPublik;
     private String spesifikasiRahasia;
     

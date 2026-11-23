@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:fragment="shell(title, active, heading, sub, actions, content)">
+<head th:replace="~{fragments/common :: head(${title})}"></head>
+<body>
+<div th:replace="~{fragments/icons :: sprite}"></div>
+<div class="app">
+  <aside class="side" aria-label="Menu utama">
+    <div class="brand">
+      <div class="logo" role="img" aria-label="Logo FindUp!"></div>
+      <div><div class="nm">FindUp!</div><div class="sb">Lost &amp; Found FIK UPNVJ</div></div>
+    </div>
+    <nav class="menu">
+      <a class="nav" th:classappend="${active == 'dash'} ? 'on'" th:href="@{/dashboard}"><svg class="ic"><use href="#i-dash"/></svg>Beranda</a>
+      <a class="nav" th:classappend="${active == 'jelajah'} ? 'on'" th:href="@{/barang}"><svg class="ic"><use href="#i-search"/></svg>Jelajahi Barang</a>
+      <a class="nav" th:classappend="${active == 'lapor'} ? 'on'" th:href="@{/lapor}"><svg class="ic"><use href="#i-plus"/></svg>Lapor Barang</a>
+      <a class="nav" th:classappend="${active == 'laporan'} ? 'on'" th:href="@{/laporan}"><svg class="ic"><use href="#i-file"/></svg>Laporan Saya</a>
+      <a class="nav" th:classappend="${active == 'klaim'} ? 'on'" th:href="@{/klaim}"><svg class="ic"><use href="#i-shield"/></svg>Status Klaim</a>
+      <a class="nav" th:classappend="${active == 'notif'} ? 'on'" th:href="@{/notifikasi}"><svg class="ic"><use href="#i-bell"/></svg>Notifikasi<span class="cnt" th:if="${unreadCount > 0}" th:text="${unreadCount}">0</span></a>
+      <a class="nav" th:classappend="${active == 'profil'} ? 'on'" th:href="@{/profil}"><svg class="ic"><use href="#i-user"/></svg>Profil</a>
+    </nav>
+    <div class="spacer"></div>
+    <div class="foot">
+      <form th:action="@{/logout}" method="post">
+        <button type="submit" class="nav"><svg class="ic"><use href="#i-out"/></svg>Keluar</button>
+      </form>
+    </div>
+  </aside>
+  <div class="scrim-nav"></div>
+  <main class="content">
+    <header class="hdr">
+      <div class="hdr-main">
+        <button type="button" class="menu-toggle" aria-label="Buka menu"><svg class="ic"><use href="#i-menu"/></svg></button>
+        <div class="tt"><h1 th:text="${heading}">Judul</h1><p th:if="${sub != null and sub != ''}" th:text="${sub}">Subjudul</p></div>
+      </div>
+      <div class="hdr-actions"><th:block th:replace="${actions}"></th:block></div>
+      <a class="uchip" th:href="@{/profil}" title="Buka Profil">
+        <span class="av" th:text="${me.inisial}">AB</span>
+        <span class="stack"><span class="n" th:text="${me.nama}">Nama</span><span class="r">Mahasiswa</span></span>
+      </a>
+    </header>
+    <th:block th:replace="${content}"></th:block>
+  </main>
+</div>
+<th:block th:replace="~{fragments/common :: foot}"></th:block>
+</body>
+</html>

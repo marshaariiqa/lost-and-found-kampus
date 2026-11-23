@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:fragment="shell(title, active, heading, sub, actions, content)">
+<head th:replace="~{fragments/common :: head(${title})}"></head>
+<body>
+<div th:replace="~{fragments/icons :: sprite}"></div>
+<div class="app">
+  <aside class="side" aria-label="Menu admin">
+    <div class="brand">
+      <div class="logo" role="img" aria-label="Logo FindUp!"></div>
+      <div><div class="nm">FindUp! Admin</div><div class="sb">Lost &amp; Found FIK UPNVJ</div></div>
+    </div>
+    <nav class="menu">
+      <a class="nav" th:classappend="${active == 'dash'} ? 'on'" th:href="@{/admin}"><svg class="ic"><use href="#i-dash"/></svg>Dashboard</a>
+      <a class="nav" th:classappend="${active == 'antrean'} ? 'on'" th:href="@{/admin/antrean}"><svg class="ic"><use href="#i-shield"/></svg>Antrean Verifikasi<span class="cnt" th:if="${antreanCount > 0}" th:text="${antreanCount}">0</span></a>
+      <a class="nav" th:classappend="${active == 'inventaris'} ? 'on'" th:href="${penerimaanCount > 0} ? @{/admin/inventaris(tab='penerimaan')} : @{/admin/inventaris}"><svg class="ic"><use href="#i-box"/></svg>Inventaris Barang<span class="cnt" th:if="${penerimaanCount > 0}" th:text="${penerimaanCount}" title="Barang menunggu diterima di Posko">0</span></a>
+      <a class="nav" th:classappend="${active == 'riwayat'} ? 'on'" th:href="@{/admin/riwayat}"><svg class="ic"><use href="#i-hist"/></svg>Riwayat Penyerahan</a>
+      <a class="nav" th:classappend="${active == 'arsip'} ? 'on'" th:href="@{/admin/arsip}"><svg class="ic"><use href="#i-arch"/></svg>Arsip Barang</a>
+      <a class="nav" th:classappend="${active == 'pengguna'} ? 'on'" th:href="@{/admin/pengguna}"><svg class="ic"><use href="#i-users"/></svg>Manajemen Pengguna</a>
+      <a class="nav" th:classappend="${active == 'pengaturan'} ? 'on'" th:href="@{/admin/pengaturan}"><svg class="ic"><use href="#i-cog"/></svg>Pengaturan Sistem</a>
+      <a class="nav" th:classappend="${active == 'profil'} ? 'on'" th:href="@{/profil}"><svg class="ic"><use href="#i-user"/></svg>Profil</a>
+    </nav>
+    <div class="spacer"></div>
+    <div class="foot">
+      <form th:action="@{/logout}" method="post">
+        <button type="submit" class="nav"><svg class="ic"><use href="#i-out"/></svg>Keluar</button>
+      </form>
+    </div>
+  </aside>
+  <div class="scrim-nav"></div>
+  <main class="content">
+    <header class="hdr">
+      <div class="hdr-main">
+        <button type="button" class="menu-toggle" aria-label="Buka menu"><svg class="ic"><use href="#i-menu"/></svg></button>
+        <div class="tt"><h1 th:text="${heading}">Judul</h1><p th:if="${sub != null and sub != ''}" th:text="${sub}">Subjudul</p></div>
+      </div>
+      <div class="hdr-actions"><th:block th:replace="${actions}"></th:block></div>
+      <a class="uchip" th:href="@{/profil}" title="Buka Profil">
+        <span class="av" th:text="${me.inisial}">AD</span>
+        <span class="stack"><span class="n" th:text="${me.nama}">Admin</span><span class="r">Admin</span></span>
+      </a>
+    </header>
+    <th:block th:replace="${content}"></th:block>
+  </main>
+</div>
+<th:block th:replace="~{fragments/common :: foot}"></th:block>
+</body>
+</html>

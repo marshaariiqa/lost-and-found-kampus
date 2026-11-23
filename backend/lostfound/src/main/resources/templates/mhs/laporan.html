@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/mhs :: shell('Laporan Saya', 'laporan', 'Laporan Saya', 'Laporan kehilangan dan penemuan yang kamu buat sendiri.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn p" th:href="@{/lapor}">Lapor Barang</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <div class="notice">
+    <svg class="ic"><use href="#i-info"/></svg>
+    <span>Halaman ini berisi laporan yang <b>kamu buat</b>. Klaim dan tanggapan yang kamu ajukan pada laporan orang lain ada di <a class="link" th:href="@{/klaim}">Status Klaim</a>.</span>
+  </div>
+
+  <div class="stack gap12">
+    <div class="chips" role="group" aria-label="Status laporan">
+      <a class="chip" th:classappend="${statusSel == ''} ? 'on'" th:href="@{/laporan(jenis=${jenisSel})}">Semua · <span th:text="${nSemua}">0</span></a>
+      <a class="chip" th:classappend="${statusSel == 'avail'} ? 'on'" th:href="@{/laporan(jenis=${jenisSel},status='avail')}">Tersedia · <span th:text="${n_avail}">0</span></a>
+      <a class="chip" th:classappend="${statusSel == 'wait'} ? 'on'" th:href="@{/laporan(jenis=${jenisSel},status='wait')}">Menunggu Verifikasi · <span th:text="${n_wait}">0</span></a>
+      <a class="chip" th:classappend="${statusSel == 'ok'} ? 'on'" th:href="@{/laporan(jenis=${jenisSel},status='ok')}">Disetujui · <span th:text="${n_ok}">0</span></a>
+      <a class="chip" th:classappend="${statusSel == 'done'} ? 'on'" th:href="@{/laporan(jenis=${jenisSel},status='done')}">Selesai · <span th:text="${n_done}">0</span></a>
+      <a class="chip" th:classappend="${statusSel == 'no'} ? 'on'" th:href="@{/laporan(jenis=${jenisSel},status='no')}">Ditolak · <span th:text="${n_no}">0</span></a>
+      <a class="chip" th:classappend="${statusSel == 'arch'} ? 'on'" th:href="@{/laporan(jenis=${jenisSel},status='arch')}">Diarsipkan · <span th:text="${n_arch}">0</span></a>
+    </div>
+    <div class="chips" role="group" aria-label="Jenis laporan">
+      <span class="hint">Jenis:</span>
+      <a class="chip" th:classappend="${jenisSel == ''} ? 'on'" th:href="@{/laporan(status=${statusSel})}">Semua · <span th:text="${total}">0</span></a>
+      <a class="chip" th:classappend="${jenisSel == 'hilang'} ? 'on'" th:href="@{/laporan(jenis='hilang',status=${statusSel})}">Hilang · <span th:text="${totalHilang}">0</span></a>
+      <a class="chip" th:classappend="${jenisSel == 'temuan'} ? 'on'" th:href="@{/laporan(jenis='temuan',status=${statusSel})}">Ditemukan · <span th:text="${totalTemuan}">0</span></a>
+    </div>
+  </div>
+
+  <section class="card x" th:if="${!rows.isEmpty()}">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Laporan</th><th>Jenis</th><th class="hide-md">Lokasi</th><th>Tanggal</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr th:each="r : ${rows}">
+            <td>
+              <div class="cellflex">
+                <div class="thumb" th:classappend="${!r.hilang()} ? 'found'">
+                  <img th:if="${r.urlGambar != null}" th:src="@{${r.urlGambar}}" alt=""/>
+                  <svg th:unless="${r.urlGambar != null}" class="ic"><use href="#i-box"/></svg>
+                </div>
+                <div><div class="strong" th:text="${r.nama}">Nama</div><div class="hint" th:text="${r.kode + ' · ' + r.kategori}">kode</div></div>
+              </div>
+            </td>
+            <td><span class="badge" th:classappend="${r.hilang()} ? 'b-red' : 'b-green'" th:text="${r.hilang() ? 'Hilang' : 'Ditemukan'}">Hilang</span></td>
+            <td th:text="${r.lokasi}">-</td>
+            <td th:text="${r.tanggal}">-</td>
+            <td>
+              <th:block th:replace="~{fragments/ui :: alurBadge(${r.alur}, ${r.alurLabel})}"></th:block>
+              <div class="hint" th:if="${r.alurHint != null and r.alurHint != ''}" th:text="${r.alurHint}" style="max-width:240px;margin-top:4px">hint</div>
+            </td>
+            <td>
+              <div class="chips" style="flex-wrap:nowrap">
+                <a class="btn s sm" th:href="@{/barang/{j}/{id}(j=${r.jenisPath()},id=${r.id})}">Lihat</a>
+                <th:block th:if="${r.milikSaya and r.tersedia()}">
+                  <div th:replace="~{fragments/ui :: kebab(${r.jenisPath()}, ${r.id}, ${r.nama})}"></div>
+                </th:block>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="card" th:if="${rows.isEmpty() and total == 0}">
+    <div th:replace="~{fragments/ui :: empty('file', 'Belum ada laporan', 'Laporan barang hilang atau temuan yang kamu buat akan muncul di sini.', '/lapor', 'Lapor Barang')}"></div>
+  </div>
+  <div class="card" th:if="${rows.isEmpty() and total > 0}">
+    <div th:replace="~{fragments/ui :: empty('search', 'Tidak ada laporan untuk filter ini', 'Ubah status atau jenis untuk melihat laporan lainnya.', '/laporan', 'Reset filter')}"></div>
+  </div>
+</th:block>
+</body>
+</html>

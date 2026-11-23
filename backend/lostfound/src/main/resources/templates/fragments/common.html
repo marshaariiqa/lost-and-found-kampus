@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="${title} + ' | FindUp!'">FindUp!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="crossorigin"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+  <link rel="icon" type="image/jpeg" th:href="@{/images/logo.jpg}"/>
+  <link rel="stylesheet" th:href="@{/css/findup.css}"/>
+  <script th:src="@{/js/findup.js}" defer="defer"></script>
+</head>
+<body>
+  <!-- Pesan hasil aksi dari backend (flash) dan wadah toast tunggal -->
+  <th:block th:fragment="foot">
+    <div id="flash" hidden="hidden"
+         th:data-sukses="${toastSukses != null ? toastSukses : (toastLogin != null ? toastLogin : '')}"
+         th:data-error="${toastError != null ? toastError : ''}"></div>
+    <div id="toast-root" aria-live="polite"></div>
+  </th:block>
+</body>
+</html>

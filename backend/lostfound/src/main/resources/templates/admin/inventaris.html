@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/adm :: shell('Inventaris Barang', 'inventaris', 'Inventaris Barang', 'Barang temuan yang secara fisik berada di Posko.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a th:if="${tab == 'posko'}" class="btn s" th:href="@{/admin/ekspor/inventaris(q=${q},kategori=${kategoriSel},status=${statusSel})}" download="download"><svg class="ic s16"><use href="#i-download"/></svg>Ekspor Excel</a>
+  <a class="btn p" th:href="@{/admin/inventaris/baru}">Tambah Barang</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <div class="notice">
+    <svg class="ic"><use href="#i-info"/></svg>
+    <span><b>Inventaris</b> hanya berisi barang yang sudah <b>diterima di Posko</b>. Laporan temuan yang barangnya masih di tangan pelapor ada di tab <b>Menunggu Penerimaan</b>; terima barangnya di sana setelah diserahkan.</span>
+  </div>
+
+  <div class="chips" role="tablist" aria-label="Bagian inventaris">
+    <a class="chip" th:classappend="${tab == 'posko'} ? 'on'" th:href="@{/admin/inventaris(tab='posko')}">Inventaris Posko · <span th:text="${nPosko}">0</span></a>
+    <a class="chip" th:classappend="${tab == 'penerimaan'} ? 'on'" th:href="@{/admin/inventaris(tab='penerimaan')}">Menunggu Penerimaan · <span th:text="${nPenerimaan}">0</span></a>
+  </div>
+
+  <section class="card pad">
+    <form method="get" th:action="@{/admin/inventaris}" class="filters" role="search">
+      <input type="hidden" name="tab" th:value="${tab}"/>
+      <div class="searchbar">
+        <label class="search"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Cari nama barang</span>
+          <input class="in" type="search" name="q" th:value="${q}" placeholder="Cari nama barang"/></label>
+        <button type="submit" class="btn p sm">Cari</button>
+      </div>
+      <select name="kategori" class="in sm" data-autosubmit="data-autosubmit" aria-label="Kategori">
+        <option value="0">Semua Kategori</option>
+        <option th:each="k : ${kategoriList}" th:value="${k.idKategori}" th:text="${k.namaKategori}" th:selected="${k.idKategori == kategoriSel}">Kategori</option>
+      </select>
+      <select th:if="${tab == 'posko'}" name="status" class="in sm" data-autosubmit="data-autosubmit" aria-label="Status">
+        <option value="" th:selected="${statusSel == ''}">Semua Status</option>
+        <option value="tersedia" th:selected="${statusSel == 'tersedia'}">Di Posko</option>
+        <option value="selesai" th:selected="${statusSel == 'selesai'}">Sudah Diserahkan</option>
+      </select>
+    </form>
+  </section>
+
+  <!-- Tab: Inventaris Posko -->
+  <section class="card x" th:if="${tab == 'posko' and !items.items.isEmpty()}">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Kode</th><th>Nama Barang</th><th>Kategori</th><th class="hide-md">Lokasi Penyimpanan</th><th>Diterima</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr th:each="r : ${items.items}">
+            <td th:text="${r.kode}">#TMN-00001</td>
+            <td><div class="strong" th:text="${r.nama}">Nama</div><div class="hint" th:text="${'Ditemukan di ' + r.lokasi + ' · ' + r.tanggal}">info</div></td>
+            <td th:text="${r.kategori}">-</td>
+            <td th:text="${r.lokasiPenyimpanan}">Posko FIK</td>
+            <td th:text="${r.diterima}">-</td>
+            <td><th:block th:replace="~{fragments/ui :: statusBarang(${r.status}, ${r.statusLabel})}"></th:block></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-foot"><span class="hint">Menampilkan <span th:text="${items.from}">1</span>–<span th:text="${items.to}">10</span> dari <span th:text="${items.total}">0</span> barang</span></div>
+  </section>
+
+  <!-- Tab: Menunggu Penerimaan -->
+  <section class="card x" th:if="${tab == 'penerimaan' and !items.items.isEmpty()}">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Kode</th><th>Nama Barang</th><th>Pelapor</th><th>Ditemukan</th><th>Aksi</th></tr></thead>
+        <tbody>
+          <tr th:each="r : ${items.items}">
+            <td th:text="${r.kode}">#TMN-00001</td>
+            <td><div class="strong" th:text="${r.nama}">Nama</div><div class="hint" th:text="${r.kategori}">kategori</div></td>
+            <td th:text="${r.pelapor}">Nama</td>
+            <td><div th:text="${r.lokasi}">Lokasi</div><div class="hint" th:text="${'Dilaporkan ' + r.dilaporkan}">tanggal</div></td>
+            <td>
+              <form class="inline-form" method="post" th:action="@{/admin/inventaris/{id}/terima(id=${r.id})}"
+                    th:data-confirm="'Barang dicatat diterima dan disimpan di ' + ${posko.lokasi} + '. Pastikan barangnya sudah benar-benar diserahkan.'" data-confirm-title="Terima barang di Posko?" data-confirm-ok="Ya, sudah diterima">
+                <button type="submit" class="btn o sm">Terima di Posko</button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-foot"><span class="hint">Menampilkan <span th:text="${items.from}">1</span>–<span th:text="${items.to}">10</span> dari <span th:text="${items.total}">0</span> laporan</span></div>
+  </section>
+
+  <div class="card" th:if="${items.items.isEmpty() and tab == 'posko' and nPosko == 0}">
+    <div th:replace="~{fragments/ui :: empty('box', 'Inventaris Posko masih kosong', 'Barang masuk ke sini setelah diterima di Posko, baik lewat tab Menunggu Penerimaan maupun Tambah Barang.', '/admin/inventaris/baru', 'Tambah Barang')}"></div>
+  </div>
+  <div class="card" th:if="${items.items.isEmpty() and tab == 'posko' and nPosko > 0}">
+    <div th:replace="~{fragments/ui :: empty('search', 'Barang tidak ditemukan', 'Tidak ada barang yang cocok dengan filter.', '/admin/inventaris', 'Reset filter')}"></div>
+  </div>
+  <div class="card" th:if="${items.items.isEmpty() and tab == 'penerimaan'}">
+    <div th:replace="~{fragments/ui :: empty('check', 'Tidak ada yang menunggu', 'Semua laporan temuan sudah diterima di Posko atau belum ada laporan baru.', '', '')}"></div>
+  </div>
+
+  <th:block th:replace="~{fragments/ui :: pager(${items}, @{/admin/inventaris(tab=${tab},q=${q},kategori=${kategoriSel},status=${statusSel})})}"></th:block>
+</th:block>
+</body>
+</html>

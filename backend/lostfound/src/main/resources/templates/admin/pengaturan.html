@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/adm :: shell('Pengaturan Sistem', 'pengaturan', 'Pengaturan Sistem', 'Informasi posko, aturan klaim, dan kategori barang.', ~{}, ~{::content})}">
+<body>
+<th:block th:fragment="content">
+  <div class="stack gap24" style="max-width:820px">
+    <form th:action="@{/admin/pengaturan}" method="post" data-validate="data-validate" class="card x pad stack gap16">
+      <h2 class="t-h2">Umum &amp; aturan klaim</h2>
+      <div class="alert bad" th:if="${errUmum != null}" role="alert"><span th:text="${errUmum}">Error</span></div>
+
+      <div class="field">
+        <label class="lbl" for="namaSistem">Nama sistem<span class="req">*</span></label>
+        <input id="namaSistem" name="namaSistem" class="in" type="text" required="required" maxlength="150" th:value="${inNama != null ? inNama : posko.namaSistem}"/>
+      </div>
+      <div class="kv-grid">
+        <div class="field">
+          <label class="lbl" for="lokasi">Lokasi posko<span class="req">*</span></label>
+          <input id="lokasi" name="lokasi" class="in" type="text" required="required" maxlength="255" th:value="${inLokasi != null ? inLokasi : posko.lokasi}"/>
+        </div>
+        <div class="field">
+          <label class="lbl" for="jam">Jam operasional<span class="req">*</span></label>
+          <input id="jam" name="jam" class="in" type="text" required="required" maxlength="100" th:value="${inJam != null ? inJam : posko.jam}"/>
+        </div>
+      </div>
+      <div class="kv-grid">
+        <div class="field">
+          <label class="lbl" for="email">Email kontak</label>
+          <input id="email" name="email" class="in" type="email" maxlength="150" th:value="${inEmail != null ? inEmail : posko.email}"/>
+        </div>
+        <div class="field">
+          <label class="lbl" for="tenggat">Tenggat tanggapan (hari)<span class="req">*</span></label>
+          <input id="tenggat" name="tenggat" class="in" type="number" min="1" max="30" required="required" th:value="${inTenggat != null ? inTenggat : posko.tenggatHari}"/>
+          <span class="hint">Dicatat sebagai tenggat pada setiap klaim baru.</span>
+        </div>
+      </div>
+      <div class="notice"><svg class="ic"><use href="#i-lock"/></svg><span>Foto KTM selalu wajib saat mengajukan klaim atau tanggapan. Aturan ini tidak dapat dimatikan.</span></div>
+      <div class="form-actions"><button type="submit" class="btn p" data-loading="Menyimpan...">Simpan Pengaturan</button></div>
+    </form>
+
+    <section class="card x pad stack gap16">
+      <div class="row-between" style="flex-wrap:wrap">
+        <h2 class="t-h2">Kategori barang</h2>
+        <form th:if="${kategoriRows.isEmpty()}" th:action="@{/admin/pengaturan/kategori/standar}" method="post" class="inline-form">
+          <button type="submit" class="btn o sm">Tambahkan kategori standar</button>
+        </form>
+      </div>
+
+      <form th:action="@{/admin/pengaturan/kategori}" method="post" data-validate="data-validate" class="toolbar">
+        <label class="sr-only" for="namaKategori">Nama kategori baru</label>
+        <input id="namaKategori" name="nama" class="in sm" style="flex:1 1 220px" type="text" required="required" maxlength="100" placeholder="Nama kategori baru"/>
+        <button type="submit" class="btn p sm"><svg class="ic s14"><use href="#i-plus"/></svg>Tambah</button>
+      </form>
+
+      <ul class="stack gap8" th:if="${!kategoriRows.isEmpty()}">
+        <li class="row-between card" style="padding:12px 16px" th:each="k : ${kategoriRows}">
+          <span class="strong" style="font-weight:500" th:text="${k.nama}">Kategori</span>
+          <span class="chips">
+            <span class="hint" th:if="${k.dipakai}">Dipakai laporan</span>
+            <form th:unless="${k.dipakai}" th:action="@{/admin/pengaturan/kategori/{id}/hapus(id=${k.id})}" method="post" class="inline-form"
+                  data-confirm="Kategori ini akan dihapus permanen." data-confirm-title="Hapus kategori?" data-confirm-ok="Ya, hapus">
+              <button type="submit" class="btn g sm" th:aria-label="'Hapus kategori ' + ${k.nama}"><svg class="ic s14"><use href="#i-trash"/></svg>Hapus</button>
+            </form>
+          </span>
+        </li>
+      </ul>
+      <p class="p14" th:if="${kategoriRows.isEmpty()}">Belum ada kategori. Mahasiswa belum bisa membuat laporan sampai ada minimal satu kategori.</p>
+    </section>
+  </div>
+</th:block>
+</body>
+</html>

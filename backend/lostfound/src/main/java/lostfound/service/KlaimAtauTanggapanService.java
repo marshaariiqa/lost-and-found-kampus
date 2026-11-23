@@ -4,18 +4,14 @@ import lostfound.repository.KlaimAtauTanggapanRepository;
 import lostfound.repository.KehilanganBarangRepository;
 import lostfound.repository.PenemuBarangRepository;
 import lostfound.repository.PenggunaRepository;
-import lostfound.repository.NotifikasiRepository;
-import lostfound.repository.LogAktivitasRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import lostfound.model.KlaimAtauTanggapan;
-import lostfound.model.LogAktivitas;
 import lostfound.model.KehilanganBarang;
 import lostfound.model.PenemuBarang;
 import lostfound.model.Pengguna;
-import lostfound.model.Notifikasi;
 import lostfound.model.JenisNotifikasi;
 import lostfound.model.StatusInteraksi;
 import lostfound.model.StatusBarang;
@@ -28,6 +24,7 @@ import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class KlaimAtauTanggapanService {
@@ -45,10 +42,19 @@ public class KlaimAtauTanggapanService {
     private PenggunaRepository penggunaRepository;
 
     @Autowired
-    private NotifikasiRepository notifikasiRepository;
+    private KlaimAtauTanggapanMapper klaimMapper;
 
     @Autowired
-    private LogAktivitasRepository logAktivitasRepository;
+    private NotifikasiService notifikasiService;
+
+    @Autowired
+    private LogAktivitasService logAktivitasService;
+
+    @Autowired
+    private PengaturanService pengaturanService;
+
+    private static final Set<StatusInteraksi> STATUS_AKTIF =
+            Set.of(StatusInteraksi.MENUNGGU_VERIFIKASI, StatusInteraksi.DISETUJUI);
 
     @Transactional
     public KlaimAtauTanggapan ajukanTanggapanKehilangan(
@@ -58,36 +64,41 @@ public class KlaimAtauTanggapanService {
             Authentication authentication) {
 
         // Ambil mahasiswa yang sedang login
-        Pengguna mahasiswa = penggunaRepository.findByEmail(authentication.getName()).orElseThrow(() ->
-                        new RuntimeException("Pengguna tidak ditemukan"));
-
-        // Pastikan pengguna adalah mahasiswa
-        if (mahasiswa.getPeran() != PeranPengguna.MAHASISWA) {
-            throw new RuntimeException("Hanya mahasiswa yang dapat mengajukan tanggapan");
-        }
+        Pengguna mahasiswa = ambilMahasiswaLogin(authentication);
 
         // Cari laporan kehilangan
-        KehilanganBarang kehilangan = kehilanganRepository.findById(idKehilangan).orElseThrow(() ->
-                        new RuntimeException("Laporan kehilangan tidak ditemukan"));
+        KehilanganBarang kehilangan = kehilanganRepository.findByIdKehilanganAndDihapusFalse(idKehilangan).orElseThrow(() ->
+            new RuntimeException("Laporan kehilangan tidak ditemukan"));
 
         // Pastikan bukan laporan milik sendiri
-        if (kehilangan.getPengguna().getIdPengguna().equals(mahasiswa.getIdPengguna())) {
-            throw new RuntimeException("Tidak dapat menanggapi laporan milik sendiri");
-        }
+        validasiBukanLaporanSendiri(
+            kehilangan.getPengguna(),
+            mahasiswa,
+            "Tidak dapat menanggapi laporan milik sendiri"
+        );
 
         // Pastikan barang masih tersedia
-        if (kehilangan.getStatus() != StatusBarang.TERSEDIA) {
-            throw new RuntimeException("Laporan ini sudah selesai");
-        }
+        validasiBarangTersedia(
+            kehilangan.getStatus(),
+            "Laporan ini sudah selesai"
+        );
 
-        // Validasi catatan bukti
-        if (catatanBukti == null || catatanBukti.isBlank()) {
-            throw new RuntimeException("Catatan bukti wajib diisi");
+        // Validasi catatan bukti dan foto KTM (wajib)
+        validasiCatatanBukti(catatanBukti);
+        validasiFotoKtm(fotoKtm);
+
+        // Cegah pengajuan ganda yang masih diproses pada laporan yang sama
+        if (klaimRepository
+                .existsByKehilanganBarang_IdKehilanganAndPenggunaMerespons_IdPenggunaAndStatusInteraksiIn(
+                        idKehilangan, mahasiswa.getIdPengguna(), STATUS_AKTIF)) {
+            throw new RuntimeException("Kamu sudah mengajukan tanggapan pada laporan ini");
         }
 
         // Buat interaksi baru
         KlaimAtauTanggapan interaksi = new KlaimAtauTanggapan();
 
+        interaksi.setTenggatTanggapan(
+                LocalDateTime.now().plusDays(pengaturanService.tenggatHari()));
         interaksi.setKehilanganBarang(kehilangan);
         interaksi.setPenemuBarang(null);
         interaksi.setPenggunaMerespons(mahasiswa);
@@ -99,11 +110,11 @@ public class KlaimAtauTanggapanService {
         klaimRepository.save(interaksi);
 
         // Kirim notifikasi kepada pemilik laporan kehilangan
-        kirimNotifikasiInteraksiBaru(
-                kehilangan.getPengguna(),
-                interaksiTersimpan,
-                kehilangan,
-                null
+        notifikasiService.kirimNotifikasiInteraksiBaru(
+            kehilangan.getPengguna(),
+            interaksiTersimpan,
+            kehilangan,
+            null
         );
 
         return interaksiTersimpan;
@@ -117,36 +128,41 @@ public class KlaimAtauTanggapanService {
             Authentication authentication) {
 
         // Ambil mahasiswa yang sedang login
-        Pengguna mahasiswa = penggunaRepository.findByEmail(authentication.getName()).orElseThrow(() ->
-                        new RuntimeException("Pengguna tidak ditemukan"));
-
-        // Pastikan pengguna adalah mahasiswa
-        if (mahasiswa.getPeran() != PeranPengguna.MAHASISWA) {
-            throw new RuntimeException("Hanya mahasiswa yang dapat mengajukan klaim");
-        }
+        Pengguna mahasiswa = ambilMahasiswaLogin(authentication);
 
         // Cari laporan barang temuan
-        PenemuBarang penemu = penemuRepository.findById(idPenemu).orElseThrow(() ->
-                        new RuntimeException("Laporan barang temuan tidak ditemukan"));
+        PenemuBarang penemu = penemuRepository.findByIdPenemuAndDihapusFalse(idPenemu).orElseThrow(() ->
+            new RuntimeException("Laporan barang temuan tidak ditemukan"));
 
         // Pastikan bukan laporan milik sendiri
-        if (penemu.getPengguna().getIdPengguna().equals(mahasiswa.getIdPengguna())) {
-            throw new RuntimeException("Tidak dapat mengajukan klaim pada laporan sendiri");
-        }
+        validasiBukanLaporanSendiri(
+            penemu.getPengguna(),
+            mahasiswa,
+            "Tidak dapat mengajukan klaim pada laporan sendiri"
+        );
 
         // Pastikan barang masih tersedia
-        if (penemu.getStatus() != StatusBarang.TERSEDIA) {
-            throw new RuntimeException("Barang ini sudah selesai diproses");
-        }
+        validasiBarangTersedia(
+            penemu.getStatus(),
+            "Barang ini sudah selesai diproses"
+        );
 
-        // Validasi catatan bukti
-        if (catatanBukti == null || catatanBukti.isBlank()) {
-            throw new RuntimeException("Catatan bukti wajib diisi");
+        // Validasi catatan bukti dan foto KTM (wajib)
+        validasiCatatanBukti(catatanBukti);
+        validasiFotoKtm(fotoKtm);
+
+        // Cegah pengajuan ganda yang masih diproses pada laporan yang sama
+        if (klaimRepository
+                .existsByPenemuBarang_IdPenemuAndPenggunaMerespons_IdPenggunaAndStatusInteraksiIn(
+                        idPenemu, mahasiswa.getIdPengguna(), STATUS_AKTIF)) {
+            throw new RuntimeException("Kamu sudah mengajukan klaim pada laporan ini");
         }
 
         // Buat interaksi baru
         KlaimAtauTanggapan interaksi = new KlaimAtauTanggapan();
 
+        interaksi.setTenggatTanggapan(
+                LocalDateTime.now().plusDays(pengaturanService.tenggatHari()));
         interaksi.setKehilanganBarang(null);
         interaksi.setPenemuBarang(penemu);
         interaksi.setPenggunaMerespons(mahasiswa);
@@ -158,66 +174,112 @@ public class KlaimAtauTanggapanService {
         klaimRepository.save(interaksi);
 
         // Kirim notifikasi kepada pelapor barang temuan
-        kirimNotifikasiInteraksiBaru(
-                penemu.getPengguna(),
-                interaksiTersimpan,
-                null,
-                penemu
+        notifikasiService.kirimNotifikasiInteraksiBaru(
+            penemu.getPengguna(),
+            interaksiTersimpan,
+            null,
+            penemu
         );
 
         return interaksiTersimpan;
     }
-    
-    private void kirimNotifikasiInteraksiBaru(
-            Pengguna penerima,
-            KlaimAtauTanggapan interaksi,
-            KehilanganBarang kehilangan,
-            PenemuBarang penemu) {
 
-        Notifikasi notifikasi = new Notifikasi();
-
-        notifikasi.setPengguna(penerima);
-        notifikasi.setInteraksi(interaksi);
-        notifikasi.setKehilanganBarang(kehilangan);
-        notifikasi.setPenemuBarang(penemu);
-        notifikasi.setJudul("Interaksi Baru");
-
-        notifikasi.setPesan("Ada mahasiswa yang mengajukan interaksi pada laporan barang kamu.");
-
-        notifikasi.setJenisNotifikasi(JenisNotifikasi.INTERAKSI_BARU);
-
-        notifikasiRepository.save(notifikasi);
+    private void validasiCatatanBukti(String catatanBukti) {
+        if (catatanBukti == null || catatanBukti.isBlank()) {
+            throw new RuntimeException("Catatan bukti wajib diisi");
+        }
     }
 
+    // Foto KTM wajib. Validasi final ada di backend, tidak hanya di form HTML.
+    private void validasiFotoKtm(String fotoKtm) {
+        if (fotoKtm == null || fotoKtm.isBlank()) {
+            throw new RuntimeException("Foto KTM wajib diunggah");
+        }
+    }
+
+    private Pengguna ambilMahasiswaLogin(Authentication authentication) {
+        Pengguna mahasiswa = penggunaRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("Pengguna tidak ditemukan"));
+
+        if (mahasiswa.getPeran() != PeranPengguna.MAHASISWA) {
+            throw new RuntimeException("Hanya mahasiswa yang dapat mengajukan interaksi");
+        }
+
+        return mahasiswa;
+    }
+
+    private void validasiBukanLaporanSendiri(
+            Pengguna pemilikLaporan,
+            Pengguna mahasiswa,
+            String pesanError) {
+
+        if (pemilikLaporan.getIdPengguna().equals(mahasiswa.getIdPengguna())) {
+            throw new RuntimeException(pesanError);
+        }
+    }
+
+    private void validasiBarangTersedia(
+            StatusBarang status,
+            String pesanError) {
+
+        if (status != StatusBarang.TERSEDIA) {
+            throw new RuntimeException(pesanError);
+        }
+    }
+
+    private Pengguna ambilAdminLogin(
+        Authentication authentication,
+        String pesanError) {
+
+            Pengguna admin = penggunaRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("Pengguna tidak ditemukan"));
+
+            if (admin.getPeran() != PeranPengguna.ADMIN) {
+                throw new RuntimeException(pesanError);
+            }
+
+            return admin;
+        }
+
+        private KlaimAtauTanggapan ambilInteraksi(Long idInteraksi) {
+            return klaimRepository.findById(idInteraksi)
+                    .orElseThrow(() -> new RuntimeException("Interaksi tidak ditemukan"));
+        }
+
+        private void validasiStatusInteraksi(
+                KlaimAtauTanggapan interaksi,
+                StatusInteraksi status,
+                String pesanError) {
+
+            if (interaksi.getStatusInteraksi() != status) {
+                throw new RuntimeException(pesanError);
+            }
+        }
+
     @Transactional
-    public KlaimAtauTanggapan setujuiInteraksi(
-            Long idInteraksi,
-            Authentication authentication) {
+    public KlaimAtauTanggapan setujuiInteraksi(Long idInteraksi, Authentication authentication) {
 
         // Ambil admin yang sedang login
-        Pengguna admin = penggunaRepository.findByEmail(authentication.getName()).orElseThrow(() ->
-                new RuntimeException("Pengguna tidak ditemukan"));
-
-        // Pastikan pengguna adalah admin
-        if (admin.getPeran() != PeranPengguna.ADMIN) {
-            throw new RuntimeException("Hanya admin yang dapat menyetujui interaksi");
-        }
+        Pengguna admin = ambilAdminLogin(
+            authentication,
+            "Hanya admin yang dapat menyetujui interaksi"
+        );
 
         // Cari interaksi
-        KlaimAtauTanggapan interaksi = klaimRepository.findById(idInteraksi).orElseThrow(() ->
-                new RuntimeException("Interaksi tidak ditemukan"));
+        KlaimAtauTanggapan interaksi = ambilInteraksi(idInteraksi);
 
         // Pastikan interaksi masih menunggu verifikasi
-        if (interaksi.getStatusInteraksi()!= StatusInteraksi.MENUNGGU_VERIFIKASI) {
-            throw new RuntimeException("Interaksi sudah pernah diverifikasi");
-        }
+        validasiStatusInteraksi(
+            interaksi,
+            StatusInteraksi.MENUNGGU_VERIFIKASI,
+            "Interaksi sudah pernah diverifikasi"
+        );
 
         // Pastikan belum ada interaksi lain yang disetujui
         if (interaksi.getKehilanganBarang() != null) {
             boolean sudahAdaYangDisetujui =
-                    klaimRepository.existsByKehilanganBarang_IdKehilanganAndStatusInteraksi(
-                            interaksi.getKehilanganBarang().getIdKehilangan(), StatusInteraksi.DISETUJUI
-                    );
+                klaimRepository.existsByKehilanganBarang_IdKehilanganAndStatusInteraksi(
+                    interaksi.getKehilanganBarang().getIdKehilangan(), StatusInteraksi.DISETUJUI);
 
         if (sudahAdaYangDisetujui) {
                 throw new RuntimeException("Sudah ada interaksi lain yang disetujui untuk laporan ini.");
@@ -225,28 +287,20 @@ public class KlaimAtauTanggapanService {
 
         } else if (interaksi.getPenemuBarang() != null) {
             boolean sudahAdaYangDisetujui =
-                    klaimRepository.existsByPenemuBarang_IdPenemuAndStatusInteraksi(
-                            interaksi.getPenemuBarang().getIdPenemu(), StatusInteraksi.DISETUJUI);
+                klaimRepository.existsByPenemuBarang_IdPenemuAndStatusInteraksi(
+                    interaksi.getPenemuBarang().getIdPenemu(), StatusInteraksi.DISETUJUI);
 
         if (sudahAdaYangDisetujui) {
                 throw new RuntimeException("Sudah ada interaksi lain yang disetujui untuk laporan ini.");
             }
         }
 
-        if (interaksi.getKehilanganBarang() == null && interaksi.getPenemuBarang() == null) {
-                throw new RuntimeException("Interaksi tidak terhubung dengan laporan barang.");
-        }
+        validasiRelasiLaporan(interaksi);
 
-        if (interaksi.getKehilanganBarang() != null && interaksi.getPenemuBarang() != null) {
-            throw new RuntimeException("Interaksi tidak boleh terhubung ke dua laporan sekaligus.");
-        }
-
-        if (interaksi.getKehilanganBarang() != null && interaksi.getKehilanganBarang().getStatus() != StatusBarang.TERSEDIA) {
-            throw new RuntimeException("Laporan kehilangan ini sudah tidak tersedia.");
-        }
-
-        if (interaksi.getPenemuBarang() != null && interaksi.getPenemuBarang().getStatus() != StatusBarang.TERSEDIA) {
-            throw new RuntimeException("Laporan temuan ini sudah tidak tersedia.");
+        if (interaksi.getKehilanganBarang() != null) {
+            validasiBarangTersedia(interaksi.getKehilanganBarang().getStatus(), "Laporan kehilangan ini sudah tidak tersedia.");
+        } else {
+            validasiBarangTersedia(interaksi.getPenemuBarang().getStatus(), "Laporan temuan ini sudah tidak tersedia.");
         }
 
         // Perbarui status interaksi
@@ -258,83 +312,65 @@ public class KlaimAtauTanggapanService {
 
         // Tolak otomatis interaksi lain pada laporan yang sama
         if (interaksi.getKehilanganBarang() != null) {
-
             List<KlaimAtauTanggapan> interaksiLain =
-                    klaimRepository.findByKehilanganBarang_IdKehilanganAndStatusInteraksi(
-                                    interaksi.getKehilanganBarang().getIdKehilangan(),StatusInteraksi.MENUNGGU_VERIFIKASI);
+                klaimRepository.findByKehilanganBarang_IdKehilanganAndStatusInteraksi(
+                    interaksi.getKehilanganBarang().getIdKehilangan(),StatusInteraksi.MENUNGGU_VERIFIKASI);
 
-            for (KlaimAtauTanggapan lainnya : interaksiLain) {
-                if (!lainnya.getIdInteraksi().equals(interaksi.getIdInteraksi())) {
-
-                    lainnya.setStatusInteraksi(StatusInteraksi.DITOLAK);
-                    lainnya.setAdminVerifikator(admin);
-                    lainnya.setAlasanPenolakan("Laporan barang sudah memiliki pengajuan lain yang disetujui.");
-                    lainnya.setWaktuVerifikasi(LocalDateTime.now());
-
-                    klaimRepository.save(lainnya);
-
-                    Notifikasi notifikasiPenolakan = new Notifikasi();
-                    notifikasiPenolakan.setPengguna(lainnya.getPenggunaMerespons());
-                    notifikasiPenolakan.setInteraksi(lainnya);
-                    notifikasiPenolakan.setKehilanganBarang(lainnya.getKehilanganBarang());
-                    notifikasiPenolakan.setPenemuBarang(lainnya.getPenemuBarang());
-                    notifikasiPenolakan.setJudul("Interaksi Ditolak");
-                    notifikasiPenolakan.setPesan("Pengajuan kamu ditolak karena laporan barang sudah memiliki pengajuan lain yang disetujui.");
-                    notifikasiPenolakan.setJenisNotifikasi(JenisNotifikasi.INTERAKSI_DITOLAK);
-                    notifikasiRepository.save(notifikasiPenolakan);
-                }
-            }
+            tolakInteraksiLain(interaksiLain, admin, interaksi.getIdInteraksi());
 
         } else if (interaksi.getPenemuBarang() != null) {
-
             List<KlaimAtauTanggapan> interaksiLain =
-                    klaimRepository.findByPenemuBarang_IdPenemuAndStatusInteraksi(
-                                    interaksi.getPenemuBarang().getIdPenemu(),StatusInteraksi.MENUNGGU_VERIFIKASI);
+                klaimRepository.findByPenemuBarang_IdPenemuAndStatusInteraksi(
+                    interaksi.getPenemuBarang().getIdPenemu(),StatusInteraksi.MENUNGGU_VERIFIKASI);
 
-            for (KlaimAtauTanggapan lainnya : interaksiLain) {
-                if (!lainnya.getIdInteraksi().equals(interaksi.getIdInteraksi())) {
-
-                    lainnya.setStatusInteraksi(StatusInteraksi.DITOLAK);
-                    lainnya.setAdminVerifikator(admin);
-                    lainnya.setAlasanPenolakan("Laporan barang sudah memiliki pengajuan lain yang disetujui.");
-                    lainnya.setWaktuVerifikasi(LocalDateTime.now());
-
-                    klaimRepository.save(lainnya);
-
-                    Notifikasi notifikasiPenolakan = new Notifikasi();
-                        notifikasiPenolakan.setPengguna(lainnya.getPenggunaMerespons());
-                        notifikasiPenolakan.setInteraksi(lainnya);
-                        notifikasiPenolakan.setKehilanganBarang(lainnya.getKehilanganBarang());
-                        notifikasiPenolakan.setPenemuBarang(lainnya.getPenemuBarang());
-                        notifikasiPenolakan.setJudul("Interaksi Ditolak");
-                        notifikasiPenolakan.setPesan("Pengajuan kamu ditolak karena laporan barang sudah memiliki pengajuan lain yang disetujui.");
-                        notifikasiPenolakan.setJenisNotifikasi(JenisNotifikasi.INTERAKSI_DITOLAK);
-                        notifikasiRepository.save(notifikasiPenolakan);
-                }
-            }
+            tolakInteraksiLain(interaksiLain, admin, interaksi.getIdInteraksi());
         }
 
         // Kirim notifikasi kepada mahasiswa yang mengajukan
-        Notifikasi notifikasi = new Notifikasi();
-        notifikasi.setPengguna(interaksi.getPenggunaMerespons());
-        notifikasi.setInteraksi(interaksiTersimpan);
-        notifikasi.setKehilanganBarang(interaksi.getKehilanganBarang());
-        notifikasi.setPenemuBarang(interaksi.getPenemuBarang());
-        notifikasi.setJudul("Interaksi Disetujui");
-        notifikasi.setPesan("Interaksi kamu telah disetujui oleh admin.");
-        notifikasi.setJenisNotifikasi(JenisNotifikasi.INTERAKSI_DISETUJUI);
-        notifikasiRepository.save(notifikasi);
+        notifikasiService.buatNotifikasi(
+            interaksi.getPenggunaMerespons(),
+            interaksiTersimpan,
+            "Interaksi Disetujui",
+            "Interaksi kamu telah disetujui oleh admin.",
+            JenisNotifikasi.INTERAKSI_DISETUJUI
+        );
 
         // Catat aktivitas admin
-        LogAktivitas log = new LogAktivitas();
-        log.setAdmin(admin);
-        log.setKehilanganBarang(interaksi.getKehilanganBarang());
-        log.setPenemuBarang(interaksi.getPenemuBarang());
-        log.setTindakan("Menyetujui interaksi ID " + idInteraksi);
-
-        logAktivitasRepository.save(log);
+        logAktivitasService.catatAktivitas(
+            admin,
+            interaksi.getKehilanganBarang(),
+            interaksi.getPenemuBarang(),
+            "Menyetujui interaksi ID " + idInteraksi
+        );
 
         return interaksiTersimpan;
+    }
+
+    private void tolakInteraksiLain(
+        List<KlaimAtauTanggapan> interaksiLain,
+        Pengguna admin,
+        Long idInteraksi) {
+
+        for (KlaimAtauTanggapan lainnya : interaksiLain) {
+
+            if (!lainnya.getIdInteraksi().equals(idInteraksi)) {
+
+                lainnya.setStatusInteraksi(StatusInteraksi.DITOLAK);
+                lainnya.setAdminVerifikator(admin);
+                lainnya.setAlasanPenolakan("Laporan barang sudah memiliki pengajuan lain yang disetujui.");
+                lainnya.setWaktuVerifikasi(LocalDateTime.now());
+
+                klaimRepository.save(lainnya);
+
+                notifikasiService.buatNotifikasi(
+                        lainnya.getPenggunaMerespons(),
+                        lainnya,
+                        "Interaksi Ditolak",
+                        "Pengajuan kamu ditolak karena laporan barang sudah memiliki pengajuan lain yang disetujui.",
+                        JenisNotifikasi.INTERAKSI_DITOLAK
+                );
+            }
+        }
     }
    
     @Transactional
@@ -344,13 +380,10 @@ public class KlaimAtauTanggapanService {
             Authentication authentication) {
 
         // Ambil admin yang sedang login
-        Pengguna admin = penggunaRepository.findByEmail(authentication.getName()).orElseThrow(() ->
-                new RuntimeException("Pengguna tidak ditemukan"));
-
-        // Pastikan pengguna adalah admin
-        if (admin.getPeran() != PeranPengguna.ADMIN) {
-            throw new RuntimeException("Hanya admin yang dapat menolak interaksi");
-        }
+        Pengguna admin = ambilAdminLogin(
+            authentication,
+            "Hanya admin yang dapat menolak interaksi"
+        );
 
         // Validasi alasan penolakan
         if (alasanPenolakan == null || alasanPenolakan.isBlank()) {
@@ -358,18 +391,16 @@ public class KlaimAtauTanggapanService {
         }
 
         // Cari interaksi
-        KlaimAtauTanggapan interaksi = klaimRepository.findById(idInteraksi).orElseThrow(() ->
-                new RuntimeException("Interaksi tidak ditemukan"));
+        KlaimAtauTanggapan interaksi = ambilInteraksi(idInteraksi);
 
         // Pastikan masih menunggu verifikasi
-        if (interaksi.getStatusInteraksi()!= StatusInteraksi.MENUNGGU_VERIFIKASI) {
-            throw new RuntimeException("Interaksi sudah pernah diverifikasi");
-        }
+        validasiStatusInteraksi(
+                interaksi,
+                StatusInteraksi.MENUNGGU_VERIFIKASI,
+                "Interaksi sudah pernah diverifikasi"
+        );
 
-        if ((interaksi.getKehilanganBarang() == null && interaksi.getPenemuBarang() == null)
-                || (interaksi.getKehilanganBarang() != null && interaksi.getPenemuBarang() != null)) {
-                throw new RuntimeException("Interaksi harus terhubung ke tepat satu laporan barang.");
-        }
+        validasiRelasiLaporan(interaksi);  
 
         // Perbarui status interaksi
         interaksi.setStatusInteraksi(StatusInteraksi.DITOLAK);
@@ -380,27 +411,30 @@ public class KlaimAtauTanggapanService {
         KlaimAtauTanggapan interaksiTersimpan =klaimRepository.save(interaksi);
 
         // Kirim notifikasi kepada mahasiswa
-        Notifikasi notifikasi = new Notifikasi();
-        notifikasi.setPengguna(interaksi.getPenggunaMerespons());
-        notifikasi.setInteraksi(interaksiTersimpan);
-        notifikasi.setKehilanganBarang(interaksi.getKehilanganBarang());
-        notifikasi.setPenemuBarang(interaksi.getPenemuBarang());
-        notifikasi.setJudul("Interaksi Ditolak");
-        notifikasi.setPesan("Interaksi kamu ditolak oleh admin. Alasan: "+ alasanPenolakan);
-        notifikasi.setJenisNotifikasi(JenisNotifikasi.INTERAKSI_DITOLAK);
-
-        notifikasiRepository.save(notifikasi);
+        notifikasiService.buatNotifikasi(
+            interaksi.getPenggunaMerespons(),
+            interaksiTersimpan,
+            "Interaksi Ditolak",
+            "Interaksi kamu ditolak oleh admin. Alasan: " + alasanPenolakan,
+            JenisNotifikasi.INTERAKSI_DITOLAK
+        );
 
         // Catat aktivitas admin
-        LogAktivitas log = new LogAktivitas();
-        log.setAdmin(admin);
-        log.setKehilanganBarang(interaksi.getKehilanganBarang());
-        log.setPenemuBarang(interaksi.getPenemuBarang());
-        log.setTindakan("Menolak interaksi ID " + idInteraksi);
-
-        logAktivitasRepository.save(log);
+        logAktivitasService.catatAktivitas(
+            admin,
+            interaksi.getKehilanganBarang(),
+            interaksi.getPenemuBarang(),
+            "Menolak interaksi ID " + idInteraksi
+        );
 
         return interaksiTersimpan;
+    }
+
+    private void validasiRelasiLaporan(KlaimAtauTanggapan interaksi) {
+        if ((interaksi.getKehilanganBarang() == null && interaksi.getPenemuBarang() == null)
+                || (interaksi.getKehilanganBarang() != null && interaksi.getPenemuBarang() != null)) {
+            throw new RuntimeException("Interaksi harus terhubung ke tepat satu laporan barang.");
+        }
     }
     
     @Transactional
@@ -409,28 +443,23 @@ public class KlaimAtauTanggapanService {
             Authentication authentication) {
 
         // Ambil admin yang sedang login
-        Pengguna admin = penggunaRepository.findByEmail(authentication.getName()).orElseThrow(() ->
-                new RuntimeException("Pengguna tidak ditemukan"));
-
-        // Pastikan pengguna adalah admin
-        if (admin.getPeran() != PeranPengguna.ADMIN) {
-            throw new RuntimeException("Hanya admin yang dapat menyelesaikan interaksi");
-        }
+        Pengguna admin = ambilAdminLogin(
+            authentication,
+            "Hanya admin yang dapat menyelesaikan interaksi"
+        );
 
         // Cari interaksi
-        KlaimAtauTanggapan interaksi = klaimRepository.findById(idInteraksi).orElseThrow(() ->
-                new RuntimeException("Interaksi tidak ditemukan"));
+        KlaimAtauTanggapan interaksi = ambilInteraksi(idInteraksi);
 
         // Pastikan interaksi sudah disetujui
-        if (interaksi.getStatusInteraksi()!= StatusInteraksi.DISETUJUI) {
-            throw new RuntimeException("Hanya interaksi yang sudah disetujui yang dapat diselesaikan");
-        }
+        validasiStatusInteraksi(
+            interaksi,
+            StatusInteraksi.DISETUJUI,
+            "Hanya interaksi yang sudah disetujui yang dapat diselesaikan"
+        );
 
         // Pastikan interaksi hanya terhubung ke satu laporan
-        if ((interaksi.getKehilanganBarang() == null && interaksi.getPenemuBarang() == null)
-                || (interaksi.getKehilanganBarang() != null && interaksi.getPenemuBarang() != null)) {
-            throw new RuntimeException("Relasi laporan pada interaksi tidak valid.");
-        }
+        validasiRelasiLaporan(interaksi);
 
         if (interaksi.getKehilanganBarang() != null && interaksi.getKehilanganBarang().getStatus() == StatusBarang.SELESAI) {
             throw new RuntimeException("Laporan kehilangan ini sudah diselesaikan.");
@@ -440,168 +469,95 @@ public class KlaimAtauTanggapanService {
             throw new RuntimeException("Laporan temuan ini sudah diselesaikan.");
         }
 
+        // Proses yang laporannya sudah diarsipkan tidak dapat dilanjutkan;
+        // admin harus memulihkan laporan terlebih dahulu.
+        if ((interaksi.getKehilanganBarang() != null
+                && interaksi.getKehilanganBarang().getStatus() == StatusBarang.DIARSIPKAN)
+            || (interaksi.getPenemuBarang() != null
+                && interaksi.getPenemuBarang().getStatus() == StatusBarang.DIARSIPKAN)) {
+            throw new RuntimeException(
+                "Laporan ini sudah diarsipkan. Pulihkan laporan terlebih dahulu sebelum menyerahkan barang.");
+        }
+
         // Ubah status barang menjadi selesai
         if (interaksi.getKehilanganBarang() != null) {
             interaksi.getKehilanganBarang().setStatus(StatusBarang.SELESAI);
-        } else if (interaksi.getPenemuBarang() != null) {
-            interaksi.getPenemuBarang().setStatus(StatusBarang.SELESAI);
         } else {
-            throw new RuntimeException("Interaksi tidak terhubung dengan laporan barang");
+            interaksi.getPenemuBarang().setStatus(StatusBarang.SELESAI);
         }
 
         // Ubah status interaksi
         interaksi.setStatusInteraksi(StatusInteraksi.SELESAI);
+        interaksi.setWaktuSelesai(LocalDateTime.now());
 
         KlaimAtauTanggapan interaksiTersimpan = klaimRepository.save(interaksi);
 
         // Kirim notifikasi kepada mahasiswa yang mengajukan
-        Notifikasi notifikasi = new Notifikasi();
-        notifikasi.setPengguna(interaksi.getPenggunaMerespons());
-        notifikasi.setInteraksi(interaksiTersimpan);
-        notifikasi.setKehilanganBarang(interaksi.getKehilanganBarang());
-        notifikasi.setPenemuBarang(interaksi.getPenemuBarang());
-        notifikasi.setJudul("Proses Pengembalian Selesai");
-        notifikasi.setPesan("Proses penyerahan barang telah dikonfirmasi oleh admin Posko FIK.");
-        notifikasi.setJenisNotifikasi(JenisNotifikasi.BARANG_SELESAI);
-
-        notifikasiRepository.save(notifikasi);
+        notifikasiService.buatNotifikasi(
+            interaksi.getPenggunaMerespons(),
+            interaksiTersimpan,
+            "Proses Pengembalian Selesai",
+            "Proses penyerahan barang telah dikonfirmasi oleh admin Posko FIK.",
+            JenisNotifikasi.BARANG_SELESAI
+        );
         
         // Kirim notifikasi kepada pihak pemilik laporan
-        Pengguna pemilikLaporan = null;
+        Pengguna pemilikLaporan;
 
         if (interaksi.getKehilanganBarang() != null) {
             pemilikLaporan = interaksi.getKehilanganBarang().getPengguna();
-        } else if (interaksi.getPenemuBarang() != null) {
+        } else {
             pemilikLaporan = interaksi.getPenemuBarang().getPengguna();
         }
 
-        if (pemilikLaporan != null) {
-            Notifikasi notifikasiPemilik = new Notifikasi();
-
-            notifikasiPemilik.setPengguna(pemilikLaporan);
-            notifikasiPemilik.setInteraksi(interaksiTersimpan);
-            notifikasiPemilik.setKehilanganBarang(interaksi.getKehilanganBarang());
-            notifikasiPemilik.setPenemuBarang(interaksi.getPenemuBarang());
-            notifikasiPemilik.setJudul("Proses Pengembalian Selesai");
-            notifikasiPemilik.setPesan("Penyerahan barang telah dikonfirmasi oleh admin Posko FIK.");
-            notifikasiPemilik.setJenisNotifikasi(JenisNotifikasi.BARANG_SELESAI);
-
-            notifikasiRepository.save(notifikasiPemilik);
-        }
+        notifikasiService.buatNotifikasi(
+            pemilikLaporan,
+            interaksiTersimpan,
+            "Proses Pengembalian Selesai",
+            "Penyerahan barang telah dikonfirmasi oleh admin Posko FIK.",
+            JenisNotifikasi.BARANG_SELESAI
+        );
 
         // Catat aktivitas admin
-        LogAktivitas log = new LogAktivitas();
-        log.setAdmin(admin);
-        log.setKehilanganBarang(interaksi.getKehilanganBarang());
-        log.setPenemuBarang(interaksi.getPenemuBarang());
-        log.setTindakan("Menyelesaikan penyerahan barang untuk interaksi ID " + idInteraksi);
-
-        logAktivitasRepository.save(log);
+        logAktivitasService.catatAktivitas(
+            admin,
+            interaksi.getKehilanganBarang(),
+            interaksi.getPenemuBarang(),
+            "Menyelesaikan penyerahan barang untuk interaksi ID " + idInteraksi
+        );
 
         return interaksiTersimpan;
     }
-    
-    @Transactional
-    public void tandaiNotifikasiDibaca(
-            Long idNotifikasi,
-            Authentication authentication) {
-
-        // Ambil pengguna yang sedang login
-        Pengguna pengguna = penggunaRepository.findByEmail(authentication.getName()).orElseThrow(() ->
-                new RuntimeException("Pengguna tidak ditemukan"));
-
-        // Cari notifikasi
-        Notifikasi notifikasi = notifikasiRepository.findById(idNotifikasi).orElseThrow(() ->
-                new RuntimeException("Notifikasi tidak ditemukan"));
-
-        // Pastikan notifikasi milik pengguna yang sedang login
-        if (!notifikasi.getPengguna().getIdPengguna().equals(pengguna.getIdPengguna())) {
-            throw new RuntimeException("Kamu tidak memiliki akses ke notifikasi ini");
-        }
-
-        // Tandai sebagai sudah dibaca
-        notifikasi.setStatusDibaca(true);
-
-        notifikasiRepository.save(notifikasi);
-    }
-    
-    public long hitungNotifikasiBelumDibaca(Authentication authentication) {
-
-        Pengguna pengguna = penggunaRepository.findByEmail(authentication.getName()).orElseThrow(() ->
-                new RuntimeException("Pengguna tidak ditemukan"));
-
-        return notifikasiRepository.countByPengguna_IdPenggunaAndStatusDibacaFalse(pengguna.getIdPengguna());
-    }
 
     @Transactional(readOnly = true)
-        public List<KlaimAtauTanggapanResponseDTO> ambilSemuaInteraksi(Authentication authentication) {
+    public List<KlaimAtauTanggapanResponseDTO> ambilSemuaInteraksi(Authentication authentication) {
 
-        Pengguna admin = penggunaRepository.findByEmail(authentication.getName()).orElseThrow(() -> new RuntimeException("Pengguna tidak ditemukan"));
+        ambilAdminLogin(authentication, "Akses hanya untuk admin");
 
-                if (admin.getPeran() != PeranPengguna.ADMIN) {
-                        throw new RuntimeException("Akses hanya untuk admin");
-                }
+        return klaimRepository.findAllByOrderByWaktuDibuatDesc()
+                .stream()
+                .map(klaimMapper::toDTO)
+                .toList();
+    }  
 
-                return klaimRepository.findAllByOrderByWaktuDibuatDesc().stream().map(this::ubahKeDTO).toList();
-        }
+    @Transactional(readOnly = true)
+    public List<KlaimAtauTanggapanResponseDTO> ambilInteraksiMahasiswa(Authentication authentication) {
 
-        @Transactional(readOnly = true)
-        public List<KlaimAtauTanggapanResponseDTO> ambilInteraksiMahasiswa(Authentication authentication) {
+        Pengguna mahasiswa = ambilMahasiswaLogin(authentication);
 
-        Pengguna mahasiswa = penggunaRepository.findByEmail(authentication.getName()).orElseThrow(() -> new RuntimeException("Pengguna tidak ditemukan"));
+        return klaimRepository
+                .findByPenggunaMerespons_IdPenggunaOrderByWaktuDibuatDesc(mahasiswa.getIdPengguna())
+                .stream()
+                .map(klaimMapper::toDTO)
+                .toList();
+    }
 
-                if (mahasiswa.getPeran() != PeranPengguna.MAHASISWA) {
-                        throw new RuntimeException("Akses hanya untuk mahasiswa");
-                }
-
-                return klaimRepository.findByPenggunaMerespons_IdPenggunaOrderByWaktuDibuatDesc(
-                        mahasiswa.getIdPengguna())
-                        .stream()
-                        .map(this::ubahKeDTO)
-                        .toList();
-        }
-
-        private KlaimAtauTanggapanResponseDTO ubahKeDTO(KlaimAtauTanggapan interaksi) {
-
-        KlaimAtauTanggapanResponseDTO dto =new KlaimAtauTanggapanResponseDTO();
-
-        dto.setIdInteraksi(interaksi.getIdInteraksi());
-
-                if (interaksi.getKehilanganBarang() != null) {
-                        dto.setIdKehilangan(interaksi.getKehilanganBarang().getIdKehilangan());
-                }
-
-                if (interaksi.getPenemuBarang() != null) {
-                        dto.setIdPenemu(interaksi.getPenemuBarang().getIdPenemu());
-                }
-
-        dto.setIdPenggunaMerespons(interaksi.getPenggunaMerespons().getIdPengguna());
-        dto.setNamaPenggunaMerespons(interaksi.getPenggunaMerespons().getNamaLengkap());
-        dto.setCatatanBukti(interaksi.getCatatanBukti());
-        dto.setFotoKtm(interaksi.getFotoKtm());
-        dto.setAlasanPenolakan(interaksi.getAlasanPenolakan());
-        dto.setStatusInteraksi(interaksi.getStatusInteraksi().name());
-        dto.setWaktuDibuat(interaksi.getWaktuDibuat());
-        dto.setWaktuVerifikasi(interaksi.getWaktuVerifikasi());
-
-        return dto;
-        }
-
-        @Transactional(readOnly = true)
-        public List<Notifikasi> ambilNotifikasiSaya(Authentication authentication) {
-
-        Pengguna pengguna = penggunaRepository.findByEmail(authentication.getName()).orElseThrow(() ->
-                new RuntimeException("Pengguna tidak ditemukan"));
-
-        return notifikasiRepository.findByPengguna_IdPenggunaOrderByWaktuDibuatDesc(pengguna.getIdPengguna());
-        }
-
-        @Transactional(readOnly = true)
-        public List<Notifikasi> ambilNotifikasiBelumDibaca(Authentication authentication) {
-
-        Pengguna pengguna = penggunaRepository.findByEmail(authentication.getName()).orElseThrow(() ->
-                new RuntimeException("Pengguna tidak ditemukan"));
-
-        return notifikasiRepository.findByPengguna_IdPenggunaAndStatusDibacaFalseOrderByWaktuDibuatDesc(pengguna.getIdPengguna());
-        }
+    // Foto bukti pendukung bersifat opsional; disimpan setelah interaksi berhasil dibuat.
+    @Transactional
+    public void simpanFotoBukti(Long idInteraksi, String pathFotoBukti) {
+        KlaimAtauTanggapan interaksi = klaimRepository.findById(idInteraksi)
+                .orElseThrow(() -> new RuntimeException("Interaksi tidak ditemukan"));
+        interaksi.setFotoBukti(pathFotoBukti);
+        klaimRepository.save(interaksi);
+    }
 }

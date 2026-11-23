@@ -35,6 +35,7 @@ public class PenggunaDetailsService implements UserDetailsService {
             .username(pengguna.getEmail())
             .password(pengguna.getKataSandi())
             .roles(pengguna.getPeran().name())
+            .disabled(!pengguna.isAktif())
             .build();
     }
 }

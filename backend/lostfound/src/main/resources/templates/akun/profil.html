@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{${layoutName} :: shell('Profil', 'profil', 'Profil', 'Informasi akun yang sedang kamu pakai.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn p" th:href="@{/pengaturan}">Edit Profil</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <th:block th:replace="~{fragments/ui :: akunTabs('profil')}"></th:block>
+
+  <div class="det profil">
+    <section class="card x pad stack gap12" style="align-items:center;text-align:center">
+      <span class="av" style="width:88px;height:88px;font-size:28px" th:text="${me.inisial}">AB</span>
+      <h2 class="t-h2" th:text="${me.nama}">Nama</h2>
+      <p class="p14" th:text="${me.email}">email</p>
+      <span class="badge b-pink" th:text="${me.admin() ? 'Admin' : 'Mahasiswa'}">Mahasiswa</span>
+    </section>
+
+    <div class="stack gap24">
+      <section class="card x pad stack gap16">
+        <div class="row-between"><h2 class="t-h2">Data diri</h2><a class="btn s sm" th:href="@{/pengaturan}">Edit Profil</a></div>
+        <div class="sum">
+          <div class="row"><span>Nama lengkap</span><span th:text="${me.nama}">-</span></div>
+          <div class="row"><span>Email</span><span th:text="${me.email}">-</span></div>
+          <div class="row"><span>Nomor telepon</span><span th:text="${me.telepon != null ? me.telepon : 'Belum diisi'}">-</span></div>
+          <div class="row"><span>Peran</span><span th:text="${me.admin() ? 'Admin' : 'Mahasiswa'}">-</span></div>
+        </div>
+      </section>
+
+      <section class="card x pad stack gap16">
+        <h2 class="t-h2">Keamanan akun</h2>
+        <div class="sum">
+          <div class="row"><span>Metode masuk</span><span th:text="${me.provider == 'GOOGLE' ? 'Akun Google' : 'Email dan kata sandi'}">-</span></div>
+          <div class="row"><span>Kata sandi</span><span th:text="${me.provider == 'LOCAL' ? 'Dikelola di FindUp!' : 'Dikelola oleh Google'}">-</span></div>
+        </div>
+        <div>
+          <a th:if="${me.provider == 'LOCAL'}" class="btn s sm" th:href="@{/pengaturan#sandi}">Ubah kata sandi</a>
+          <p th:if="${me.provider != 'LOCAL'}" class="hint">Karena kamu masuk lewat Google, kata sandi diubah dari pengaturan akun Google-mu.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</th:block>
+</body>
+</html>

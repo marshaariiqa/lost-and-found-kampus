@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Akun Dibuat')}"></head>
+<body>
+<div th:replace="~{fragments/icons :: sprite}"></div>
+<main class="rp" style="min-height:100vh">
+  <div class="box stack gap16" style="align-items:center;text-align:center">
+    <div class="empty" style="padding:0">
+      <div class="ico" style="width:72px;height:72px;background:var(--green-bg);color:var(--green)"><svg class="ic s28"><use href="#i-check"/></svg></div>
+    </div>
+    <h1>Akun berhasil dibuat</h1>
+    <p class="p14">Akun untuk <b th:text="${emailBaru}">email</b> sudah aktif. Silakan masuk untuk mulai memakai FindUp!.</p>
+    <a class="btn p w" th:href="@{/login}">Masuk Sekarang</a>
+  </div>
+</main>
+<div id="flash" hidden="hidden" data-sukses="Akun berhasil dibuat."></div>
+<div id="toast-root" aria-live="polite"></div>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/adm :: shell('Arsip Barang', 'arsip', 'Arsip Barang', 'Laporan yang melewati batas waktu dan diarsipkan otomatis.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn s" th:href="@{/admin/ekspor/arsip(q=${q},kategori=${kategoriSel},jenis=${jenisSel})}" download="download"><svg class="ic s16"><use href="#i-download"/></svg>Ekspor Excel</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <section class="card pad">
+    <form method="get" th:action="@{/admin/arsip}" class="filters" role="search">
+      <div class="searchbar">
+        <label class="search"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Cari nama barang</span>
+          <input class="in" type="search" name="q" th:value="${q}" placeholder="Cari nama barang"/></label>
+        <button type="submit" class="btn p sm">Cari</button>
+      </div>
+      <select name="kategori" class="in sm" data-autosubmit="data-autosubmit" aria-label="Kategori">
+        <option value="0">Semua kategori</option>
+        <option th:each="k : ${kategoriList}" th:value="${k.idKategori}" th:text="${k.namaKategori}" th:selected="${k.idKategori == kategoriSel}">Kategori</option>
+      </select>
+      <select name="jenis" class="in sm" data-autosubmit="data-autosubmit" aria-label="Jenis">
+        <option value="" th:selected="${jenisSel == ''}">Semua jenis</option>
+        <option value="temuan" th:selected="${jenisSel == 'temuan'}">Barang temuan</option>
+        <option value="hilang" th:selected="${jenisSel == 'hilang'}">Barang hilang</option>
+      </select>
+    </form>
+  </section>
+
+  <section class="card x" th:if="${!items.items.isEmpty()}">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Kode</th><th>Nama Barang</th><th>Jenis</th><th class="hide-md">Kategori</th><th>Dilaporkan</th><th class="hide-md">Alasan</th><th>Aksi</th></tr></thead>
+        <tbody>
+          <tr th:each="r : ${items.items}">
+            <td th:text="${r.kode}">#TMN-00001</td>
+            <td><div class="strong" th:text="${r.nama}">Nama</div><div class="hint" th:text="${'Pelapor: ' + r.pelapor}">pelapor</div></td>
+            <td><span class="badge" th:classappend="${r.hilang()} ? 'b-red' : 'b-green'" th:text="${r.hilang() ? 'Lost' : 'Found'}">Found</span></td>
+            <td th:text="${r.kategori}">-</td>
+            <td th:text="${r.dilaporkan}">-</td>
+            <td><span class="badge plain b-gray" th:text="${r.alasan}">TIDAK DIKLAIM</span></td>
+            <td>
+              <form class="inline-form" method="post" th:action="@{/admin/arsip/{j}/{id}/pulihkan(j=${r.jenisPath()},id=${r.id})}"
+                    data-confirm="Barang akan dikembalikan ke inventaris dan tampil lagi di daftar publik." data-confirm-title="Pulihkan barang?" data-confirm-ok="Ya, pulihkan">
+                <button type="submit" class="btn p sm">Pulihkan</button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-foot"><span class="hint">Menampilkan <span th:text="${items.from}">1</span>–<span th:text="${items.to}">10</span> dari <span th:text="${items.total}">0</span> barang</span></div>
+  </section>
+
+  <div class="card" th:if="${items.items.isEmpty()}">
+    <div th:replace="~{fragments/ui :: empty('arch', 'Arsip kosong', 'Laporan yang tidak ditindaklanjuti dalam 7 hari akan diarsipkan otomatis dan muncul di sini.', '', '')}"></div>
+  </div>
+
+  <th:block th:replace="~{fragments/ui :: pager(${items}, @{/admin/arsip(q=${q},kategori=${kategoriSel},jenis=${jenisSel})})}"></th:block>
+</th:block>
+</body>
+</html>

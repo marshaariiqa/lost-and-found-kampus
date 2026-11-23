@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/adm :: shell('Dashboard Admin', 'dash', 'Dashboard', 'Ringkasan operasional posko Lost &amp; Found.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn p" th:href="@{/admin/inventaris/baru}">Tambah Barang</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <section class="stats" aria-label="Ringkasan (klik untuk membuka halaman terkait)">
+    <a class="card stat" th:href="@{/admin/antrean(status='wait')}">
+      <span class="l">Klaim Menunggu</span>
+      <span class="v" th:text="${stat.menunggu}">0</span>
+      <span class="hint">Perlu diverifikasi</span>
+      <span class="go">Buka antrean <svg class="ic s14"><use href="#i-chev"/></svg></span>
+    </a>
+    <a class="card stat" th:href="@{/admin/inventaris}">
+      <span class="l">Barang di Posko</span>
+      <span class="v" th:text="${stat.diPosko}">0</span>
+      <span class="hint"><span th:text="${stat.menungguTerima}">0</span> laporan menunggu diterima</span>
+      <span class="go">Buka inventaris <svg class="ic s14"><use href="#i-chev"/></svg></span>
+    </a>
+    <a class="card stat" th:href="@{/admin/riwayat}">
+      <span class="l">Diserahkan Bulan Ini</span>
+      <span class="v" th:text="${stat.diserahkanBulanIni}">0</span>
+      <span class="hint">Bulan lalu: <span th:text="${stat.diserahkanBulanLalu}">0</span></span>
+      <span class="go">Buka riwayat <svg class="ic s14"><use href="#i-chev"/></svg></span>
+    </a>
+    <a class="card stat" th:href="@{/admin/pengguna}">
+      <span class="l">Pengguna Aktif</span>
+      <span class="v" th:text="${stat.penggunaAktif}">0</span>
+      <span class="hint">Mahasiswa dan admin</span>
+      <span class="go">Kelola pengguna <svg class="ic s14"><use href="#i-chev"/></svg></span>
+    </a>
+  </section>
+
+  <div class="det wide" style="align-items:start">
+    <section class="card x pad stack gap16">
+      <div class="row-between"><h2 class="t-h2">Antrean verifikasi terbaru</h2><a class="link b" th:href="@{/admin/antrean}">Lihat semua</a></div>
+      <div class="stack gap12" th:if="${!stat.antreanTerbaru.isEmpty()}">
+        <div class="row-between card" style="padding:14px 16px;gap:16px" th:each="r : ${stat.antreanTerbaru}">
+          <div style="min-width:0">
+            <div class="strong" style="font-weight:700" th:text="${r.namaBarang}">Barang</div>
+            <div class="hint"><span th:text="${r.pemohon}">Pemohon</span> · <span th:text="${r.diajukanSingkat}">-</span></div>
+          </div>
+          <a class="btn p sm" th:href="@{/admin/antrean(verif=${r.id})}">Verifikasi</a>
+        </div>
+      </div>
+      <th:block th:if="${stat.antreanTerbaru.isEmpty()}">
+        <div th:replace="~{fragments/ui :: empty('check', 'Tidak ada klaim menunggu', 'Semua klaim yang masuk sudah diverifikasi.', '', '')}"></div>
+      </th:block>
+    </section>
+
+    <section class="card x pad stack gap16">
+      <h2 class="t-h2">Aktivitas sistem</h2>
+      <ul class="stack gap12" th:if="${!stat.aktivitas.isEmpty()}">
+        <li class="stack" th:each="a : ${stat.aktivitas}">
+          <span class="p14" th:text="${a.admin + ' · ' + a.tindakan}">Aktivitas</span>
+          <span class="hint" th:text="${a.waktu}">waktu</span>
+        </li>
+      </ul>
+      <p class="p14" th:if="${stat.aktivitas.isEmpty()}">Belum ada aktivitas admin yang tercatat.</p>
+    </section>
+  </div>
+</th:block>
+</body>
+</html>

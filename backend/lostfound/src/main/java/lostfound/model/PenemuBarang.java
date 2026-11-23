@@ -38,6 +38,10 @@ public class PenemuBarang {
     @Column(name = "lokasi_penyimpanan")
     private String lokasiPenyimpanan;
 
+    // NULL = belum diterima di Posko (barang masih di tangan penemu)
+    @Column(name = "waktu_diterima")
+    private LocalDateTime waktuDiterima;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private StatusBarang status = StatusBarang.TERSEDIA;
@@ -49,6 +53,9 @@ public class PenemuBarang {
     protected void onCreate() {
         waktuDibuat = LocalDateTime.now();
     }
+
+    @Column(name = "dihapus", nullable = false)
+    private boolean dihapus = false;
 
     public PenemuBarang() {
     }
@@ -141,4 +148,24 @@ public class PenemuBarang {
     public void setWaktuDibuat(LocalDateTime waktuDibuat) {
         this.waktuDibuat = waktuDibuat;
     }
-}   
+
+    public boolean isDihapus() {
+        return dihapus;
+    }
+
+    public void setDihapus(boolean dihapus) {
+        this.dihapus = dihapus;
+    }
+
+    public LocalDateTime getWaktuDiterima() {
+        return waktuDiterima;
+    }
+
+    public void setWaktuDiterima(LocalDateTime waktuDiterima) {
+        this.waktuDiterima = waktuDiterima;
+    }
+
+    public boolean isDiterimaDiPosko() {
+        return waktuDiterima != null;
+    }
+}

@@ -10,9 +10,13 @@ import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserServ
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -50,7 +54,19 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if (penggunaOptional.isPresent()) {
             // Jika akun sudah terdaftar
             pengguna = penggunaOptional.get();
-            pengguna.setNamaLengkap(name);
+
+            if (!pengguna.isAktif()) {
+                throw new OAuth2AuthenticationException(
+                    new OAuth2Error("account_disabled"),
+                    "Akun ini dinonaktifkan oleh admin."
+                );
+            }
+
+            // Nama hanya diisi dari Google bila belum ada, agar perubahan
+            // nama dari halaman Pengaturan tidak tertimpa setiap login.
+            if (pengguna.getNamaLengkap() == null || pengguna.getNamaLengkap().isBlank()) {
+                pengguna.setNamaLengkap(name);
+            }
             pengguna.setGoogleId(googleId);
 
         } else {
@@ -66,6 +82,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         penggunaRepository.save(pengguna);
 
-        return oAuth2User;
+        // Nama principal dibuat = email supaya Authentication.getName()
+        // konsisten dengan login form (semua service memakai findByEmail).
+        // Role dimasukkan agar aturan hasRole() pada SecurityConfig berlaku.
+        List<GrantedAuthority> authorities = List.of(
+                new SimpleGrantedAuthority("ROLE_" + pengguna.getPeran().name()));
+
+        return new DefaultOAuth2User(authorities, oAuth2User.getAttributes(), "email");
     }
 }

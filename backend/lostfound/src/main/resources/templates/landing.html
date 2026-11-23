@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Lost &amp; Found Kampus')}"></head>
+<body>
+<div th:replace="~{fragments/icons :: sprite}"></div>
+
+<header class="lnav">
+  <a class="brand" th:href="@{/}"><div class="logo" role="img" aria-label="Logo FindUp!"></div>
+    <div><div class="nm">FindUp!</div><div class="sb">Lost &amp; Found FIK UPNVJ</div></div></a>
+  <nav class="tabs" aria-label="Navigasi halaman">
+    <a class="ltab on" href="#beranda">Beranda</a>
+    <a class="ltab" href="#lostfound">Lost &amp; Found</a>
+    <a class="ltab" href="#tentang">Tentang</a>
+    <a class="ltab" href="#bantuan">Bantuan</a>
+  </nav>
+  <div class="act">
+    <a class="btn s sm" th:href="@{/login}">Masuk</a>
+    <a class="btn p sm" th:href="@{/register}">Daftar</a>
+  </div>
+</header>
+
+<!-- ===== Hero ===== -->
+<section class="hero" id="beranda">
+  <div class="wrap hero-in">
+    <div class="txt">
+      <span class="eyebrow">Lost &amp; Found khusus kampus</span>
+      <h1 class="disp">Kehilangan barang di kampus? Temukan lagi di FindUp!</h1>
+      <p class="lead">Laporkan barang hilang, lihat barang temuan, dan ajukan klaim dengan aman. Setiap klaim diverifikasi admin sebelum barang diserahkan.</p>
+      <div class="chips">
+        <a class="btn p" th:href="@{/login}">Mulai Sekarang</a>
+        <a class="btn s" href="#lostfound">Lihat Barang</a>
+      </div>
+    </div>
+    <div class="vis" th:if="${!terbaru.isEmpty()}">
+      <th:block th:each="c, st : ${terbaru}" th:if="${st.index lt 2}">
+        <th:block th:replace="~{fragments/ui :: itemCard(${c}, true)}"></th:block>
+      </th:block>
+    </div>
+    <div class="vis" th:if="${terbaru.isEmpty()}">
+      <div class="blank"><svg class="ic" style="width:96px;height:96px;stroke-width:1.2"><use href="#i-box"/></svg></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Kenapa FindUp! ===== -->
+<section class="sec w">
+  <div class="wrap stack gap24" style="align-items:center;text-align:center">
+    <div class="stack gap8"><h2 class="h1">Kenapa FindUp!?</h2><p class="sub">Dibuat supaya barang kembali ke pemilik yang tepat.</p></div>
+    <div class="g3">
+      <div class="feat"><div class="ico"><svg class="ic"><use href="#i-search"/></svg></div><div class="h3">Cari dengan cepat</div><p class="p14">Telusuri barang hilang dan temuan lewat pencarian nama dan filter kategori.</p></div>
+      <div class="feat"><div class="ico"><svg class="ic"><use href="#i-shield"/></svg></div><div class="h3">Klaim terverifikasi</div><p class="p14">Pemohon mengunggah foto KTM dan bukti. Admin mencocokkan sebelum barang diserahkan.</p></div>
+      <div class="feat"><div class="ico"><svg class="ic"><use href="#i-bell"/></svg></div><div class="h3">Pantau statusnya</div><p class="p14">Lihat perkembangan laporan dan klaimmu, lengkap dengan notifikasi di akunmu.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Cara kerja + CTA ===== -->
+<section class="sec">
+  <div class="wrap stack gap24" style="align-items:center;text-align:center">
+    <h2 class="h1">Cara kerja</h2>
+    <div class="g3">
+      <div class="step"><div class="no">1</div><div class="h3">Lapor</div><p class="p14">Buat laporan barang hilang atau barang temuan beserta lokasi dan fotonya.</p></div>
+      <div class="step"><div class="no">2</div><div class="h3">Ajukan klaim</div><p class="p14">Kalau menemukan barangmu, ajukan klaim dengan bukti dan foto KTM.</p></div>
+      <div class="step"><div class="no">3</div><div class="h3">Ambil di posko</div><p class="p14">Setelah disetujui, ambil barang di <span th:text="${posko.lokasi}">Posko FIK</span> dengan membawa KTM asli.</p></div>
+    </div>
+    <div class="cta" style="width:100%;text-align:left">
+      <div class="stack gap8"><div class="t">Siap membantu atau mencari barangmu?</div><p class="lead">Masuk ke akunmu untuk melapor, mencari, dan mengajukan klaim.</p></div>
+      <a class="btn white" th:href="@{/login}">Masuk ke Akun</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Lost & Found ===== -->
+<section class="sec w" id="lostfound">
+  <div class="wrap stack gap24">
+    <div class="stack gap8"><h2 class="h1">Lost &amp; Found</h2><p class="sub">Barang hilang dan barang temuan di lingkungan kampus. Masuk untuk melihat detail dan mengajukan klaim.</p></div>
+
+    <form method="get" th:action="@{/#lostfound}" class="filters" role="search">
+      <div class="searchbar">
+        <label class="search"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Cari nama barang</span>
+          <input class="in" type="search" name="q" th:value="${q}" placeholder="Cari nama barang" maxlength="100"/></label>
+        <button type="submit" class="btn p sm">Cari</button>
+      </div>
+      <select name="kategori" class="in sm" data-autosubmit="data-autosubmit" aria-label="Kategori">
+        <option value="0">Semua Kategori</option>
+        <option th:each="k : ${kategoriList}" th:value="${k.idKategori}" th:text="${k.namaKategori}" th:selected="${k.idKategori == kategoriSel}">Kategori</option>
+      </select>
+      <select name="jenis" class="in sm" data-autosubmit="data-autosubmit" aria-label="Jenis laporan">
+        <option value="" th:selected="${jenisSel == ''}">Semua Jenis</option>
+        <option value="hilang" th:selected="${jenisSel == 'hilang'}">Barang hilang</option>
+        <option value="temuan" th:selected="${jenisSel == 'temuan'}">Barang temuan</option>
+      </select>
+      <a class="btn g sm" th:if="${filterAktif}" th:href="@{/#lostfound}">Reset</a>
+    </form>
+
+    <div class="cards landing-cards" th:if="${!items.items.isEmpty()}">
+      <th:block th:each="c : ${items.items}"><th:block th:replace="~{fragments/ui :: itemCard(${c}, true)}"></th:block></th:block>
+    </div>
+    <div class="card" th:if="${items.items.isEmpty() and !filterAktif}">
+      <div th:replace="~{fragments/ui :: empty('box', 'Belum ada barang', 'Belum ada laporan barang hilang atau temuan. Masuk ke akunmu dan jadilah yang pertama melapor.', '/login', 'Masuk ke Akun')}"></div>
+    </div>
+    <div class="card" th:if="${items.items.isEmpty() and filterAktif}">
+      <div th:replace="~{fragments/ui :: empty('search', 'Barang tidak ditemukan', 'Tidak ada barang yang cocok dengan pencarianmu. Coba kata kunci atau filter lain.', '/', 'Reset pencarian')}"></div>
+    </div>
+
+    <div class="more-cta" th:if="${items.total > items.to}">
+      <p class="p14">Menampilkan barang terbaru. Masuk untuk melihat semua <b th:text="${items.total}">0</b> barang, melihat detail, dan mengajukan klaim.</p>
+      <a class="btn p" th:href="@{/login}">Masuk untuk Lihat Semua</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Tentang ===== -->
+<section class="sec" id="tentang">
+  <div class="wrap about">
+    <div class="about-head">
+      <span class="eyebrow">Tentang kami</span>
+      <h2 class="h1 big">Mengembalikan barang yang tertinggal, dengan cara yang lebih tertib.</h2>
+      <p class="lead">FindUp! adalah layanan Fakultas Ilmu Komputer UPN Veteran Jakarta untuk membantu civitas melaporkan, mencari, dan mengambil kembali barang.</p>
+    </div>
+    <div class="about-cards">
+      <div class="card pad stack gap8"><div class="h3">Apa itu FindUp!?</div><p class="p14">Aplikasi web tempat mahasiswa dan civitas FIK melaporkan barang hilang atau temuan, lalu mengajukan klaim dengan bukti yang diverifikasi admin.</p></div>
+      <div class="card pad stack gap8"><div class="h3">Kenapa dibuat?</div><p class="p14">Supaya barang yang tertinggal punya jalur yang jelas: tercatat, bisa dicari, dan diserahkan ke pemilik yang tepat.</p></div>
+    </div>
+  </div>
+
+  <div class="wrap stack gap24" style="margin-top:56px">
+    <h3 class="h1 ctr-text">Masalah yang ingin diselesaikan</h3>
+    <div class="g3">
+      <div class="feat"><div class="ico"><svg class="ic"><use href="#i-file"/></svg></div><div class="h3">Laporan tercecer</div><p class="p14">Info barang hilang tersebar di grup chat dan mudah tenggelam.</p></div>
+      <div class="feat"><div class="ico"><svg class="ic"><use href="#i-shield"/></svg></div><div class="h3">Pemilik sulit dipastikan</div><p class="p14">Tanpa verifikasi, barang rawan diambil orang yang salah.</p></div>
+      <div class="feat"><div class="ico"><svg class="ic"><use href="#i-box"/></svg></div><div class="h3">Barang menumpuk di posko</div><p class="p14">Barang temuan tidak tercatat rapi sehingga sulit dicari.</p></div>
+    </div>
+  </div>
+
+  <div class="wrap stack gap24" style="margin-top:56px">
+    <h3 class="h1 ctr-text">Manfaat untuk civitas FIK</h3>
+    <div class="g3">
+      <div class="feat"><div class="ico"><svg class="ic"><use href="#i-user"/></svg></div><div class="h3">Mahasiswa</div><p class="p14">Lapor dan cari barang dari satu tempat, lengkap dengan notifikasi perkembangan.</p></div>
+      <div class="feat"><div class="ico"><svg class="ic"><use href="#i-users"/></svg></div><div class="h3">Dosen dan tenaga kependidikan</div><p class="p14">Barang temuan di ruang kelas atau kantor bisa dilaporkan dengan cepat.</p></div>
+      <div class="feat"><div class="ico"><svg class="ic"><use href="#i-cog"/></svg></div><div class="h3">Pengelola Posko FIK</div><p class="p14">Antrean klaim, inventaris, dan riwayat penyerahan tercatat rapi.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Bantuan ===== -->
+<section class="sec w" id="bantuan">
+  <div class="wrap stack gap24">
+    <div class="stack gap8"><h2 class="h1">Pusat Bantuan</h2><p class="sub">Panduan singkat dan jawaban untuk pertanyaan yang sering muncul.</p></div>
+
+    <h3 class="h3">Panduan cepat</h3>
+    <div class="guides">
+      <div class="guide card pad stack gap12">
+        <span class="no">1</span><div class="h3">Melaporkan barang hilang</div>
+        <ul class="stack gap8"><li class="bul">Masuk ke akunmu</li><li class="bul">Buka Lapor Barang, pilih Barang hilang, isi detail dan lokasi</li><li class="bul">Tinjau lalu tekan Kirim Laporan</li></ul>
+      </div>
+      <div class="guide card pad stack gap12">
+        <span class="no">2</span><div class="h3">Melaporkan barang temuan</div>
+        <ul class="stack gap8"><li class="bul">Pilih Barang temuan, isi lokasi dan unggah foto</li><li class="bul">Serahkan barang ke <span th:text="${posko.lokasi}">Posko FIK</span></li><li class="bul">Admin menerima dan mencatatnya di inventaris</li></ul>
+      </div>
+      <div class="guide card pad stack gap12">
+        <span class="no">3</span><div class="h3">Mengajukan klaim</div>
+        <ul class="stack gap8"><li class="bul">Buka detail barang temuan, tekan Ajukan Klaim</li><li class="bul">Isi ciri khusus dan unggah foto KTM</li><li class="bul">Tunggu hasil verifikasi admin</li></ul>
+      </div>
+      <div class="guide card pad stack gap12">
+        <span class="no">4</span><div class="h3">Mengambil barang</div>
+        <ul class="stack gap8"><li class="bul">Tunggu status Disetujui</li><li class="bul">Datang ke posko dengan KTM asli</li><li class="bul">Admin mengonfirmasi penyerahan</li></ul>
+      </div>
+    </div>
+
+    <div class="help-grid" id="faq">
+      <div class="stack gap12">
+        <h3 class="h3">Pertanyaan yang sering diajukan</h3>
+        <details class="faq" open="open"><summary>Apakah harus login untuk melihat barang?<svg class="ic"><use href="#i-chev"/></svg></summary>
+          <p class="p14 a">Tidak. Daftar barang bisa dilihat tanpa akun. Login diperlukan untuk melihat detail, melapor, mengajukan klaim, atau menanggapi laporan.</p></details>
+        <details class="faq"><summary>Bukti apa yang diminta saat klaim?<svg class="ic"><use href="#i-chev"/></svg></summary>
+          <p class="p14 a">Ciri khusus barang yang hanya diketahui pemiliknya dan foto KTM (wajib). Foto bukti tambahan boleh disertakan. Foto KTM bersifat privat dan hanya bisa dibuka olehmu dan admin.</p></details>
+        <details class="faq"><summary>Berapa lama proses verifikasi?<svg class="ic"><use href="#i-chev"/></svg></summary>
+          <p class="p14 a">Admin menargetkan pemeriksaan dalam <b th:text="${posko.tenggatHari}">2</b> hari. Kamu mendapat notifikasi saat statusnya berubah.</p></details>
+        <details class="faq"><summary>Klaimku ditolak, apa yang harus dilakukan?<svg class="ic"><use href="#i-chev"/></svg></summary>
+          <p class="p14 a">Baca alasan dari admin di halaman Status Klaim. Bila barangnya masih tersedia, kamu bisa mengajukan ulang dengan bukti yang lebih jelas.</p></details>
+        <details class="faq"><summary>Di mana barang diambil?<svg class="ic"><use href="#i-chev"/></svg></summary>
+          <p class="p14 a">Di <b th:text="${posko.lokasi}">Posko FIK</b> pada <span th:text="${posko.jam}">08.00 - 16.00 WIB</span>, dengan membawa KTM asli.</p></details>
+        <details class="faq"><summary>Kenapa laporan saya hilang dari daftar?<svg class="ic"><use href="#i-chev"/></svg></summary>
+          <p class="p14 a">Laporan yang belum ditindaklanjuti selama 7 hari diarsipkan otomatis. Hubungi admin bila ingin memulihkannya.</p></details>
+      </div>
+      <aside class="card pad stack gap12 contact">
+        <div class="h3">Masih butuh bantuan?</div>
+        <p class="p14">Hubungi pengelola Posko FIK.</p>
+        <div class="bul-ic"><svg class="ic s18"><use href="#i-pin"/></svg><span th:text="${posko.lokasi}">Posko FIK</span></div>
+        <div class="bul-ic"><svg class="ic s18"><use href="#i-clock"/></svg><span th:text="${posko.jam}">08.00 - 16.00 WIB</span></div>
+        <div class="bul-ic" th:if="${posko.adaEmail()}"><svg class="ic s18"><use href="#i-mail"/></svg><span th:text="${posko.email}">email</span></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Footer ===== -->
+<footer class="lfoot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="stack gap12">
+        <div class="brand" style="padding:0"><div class="logo" role="img" aria-label="Logo FindUp!"></div><div><div class="nm">FindUp!</div><div class="sb">Lost &amp; Found FIK UPNVJ</div></div></div>
+        <p class="p14" style="max-width:300px">Bantu kembalikan barang yang tertinggal di lingkungan Fakultas Ilmu Komputer UPN Veteran Jakarta.</p>
+      </div>
+      <div class="stack gap8"><span class="fh">Menu</span><a class="flink" href="#beranda">Beranda</a><a class="flink" href="#lostfound">Lost &amp; Found</a><a class="flink" href="#tentang">Tentang</a><a class="flink" href="#bantuan">Bantuan</a></div>
+      <div class="stack gap8"><span class="fh">Panduan</span><a class="flink" href="#bantuan">Melaporkan barang</a><a class="flink" href="#bantuan">Mengajukan klaim</a><a class="flink" href="#bantuan">Mengambil barang</a><a class="flink" href="#faq">FAQ</a></div>
+      <div class="stack gap8"><span class="fh">Kontak</span>
+        <span class="p14" th:text="${posko.lokasi}">Posko FIK</span>
+        <span class="p14" th:if="${posko.adaEmail()}" th:text="${posko.email}">email</span>
+        <span class="p14" th:text="${posko.jam}">jam</span>
+      </div>
+    </div>
+    <div class="foot-bar">
+      <span class="hint">© <span th:text="${tahun}">2026</span> FindUp! · FIK UPNVJ</span>
+      <span class="chips"><a class="flink" th:href="@{/login}">Masuk</a><a class="flink" th:href="@{/register}">Daftar</a></span>
+    </div>
+  </div>
+</footer>
+
+<div id="flash" hidden="hidden"></div>
+<div id="toast-root" aria-live="polite"></div>
+</body>
+</html>

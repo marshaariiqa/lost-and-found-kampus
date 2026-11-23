@@ -50,6 +50,9 @@ public class KehilanganBarang {
     @Column(name = "status", nullable = false)
     private StatusBarang status = StatusBarang.TERSEDIA;
 
+    @Column(name = "dihapus", nullable = false)
+    private boolean dihapus = false;
+
     public KehilanganBarang() {
     }
 
@@ -140,5 +143,13 @@ public class KehilanganBarang {
 
     public void setWaktuDibuat(LocalDateTime waktuDibuat) {
         this.waktuDibuat = waktuDibuat;
+    }
+
+    public boolean isDihapus() {
+        return dihapus;
+    }
+
+    public void setDihapus(boolean dihapus) {
+        this.dihapus = dihapus;
     }
 }

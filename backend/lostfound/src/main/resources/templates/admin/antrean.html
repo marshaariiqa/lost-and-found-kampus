@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/adm :: shell('Antrean Verifikasi', 'antrean', 'Antrean Verifikasi', 'Periksa bukti klaim dan tanggapan dari mahasiswa.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn s" th:href="@{/admin/ekspor/antrean(status=${statusSel},q=${q})}" download="download"><svg class="ic s16"><use href="#i-download"/></svg>Ekspor Excel</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <div class="row-between" style="flex-wrap:wrap">
+    <div class="chips">
+      <a class="chip" th:classappend="${statusSel == 'wait'} ? 'on'" th:href="@{/admin/antrean(status='wait',q=${q})}">Menunggu · <span th:text="${nMenunggu}">0</span></a>
+      <a class="chip" th:classappend="${statusSel == 'ok'} ? 'on'" th:href="@{/admin/antrean(status='ok',q=${q})}">Disetujui · <span th:text="${nDisetujui}">0</span></a>
+      <a class="chip" th:classappend="${statusSel == 'no'} ? 'on'" th:href="@{/admin/antrean(status='no',q=${q})}">Ditolak</a>
+      <a class="chip" th:classappend="${statusSel == 'all'} ? 'on'" th:href="@{/admin/antrean(status='all',q=${q})}">Semua · <span th:text="${nSemua}">0</span></a>
+    </div>
+    <form method="get" th:action="@{/admin/antrean}" role="search">
+      <input type="hidden" name="status" th:value="${statusSel}"/>
+      <label class="search"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Cari</span>
+        <input class="in" type="search" name="q" th:value="${q}" placeholder="Cari barang atau pemohon"/></label>
+    </form>
+  </div>
+
+  <section class="card x" th:if="${!items.items.isEmpty()}">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Barang</th><th class="hide-md">Jenis</th><th>Pemohon</th><th>Masuk</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody>
+          <tr th:each="r : ${items.items}">
+            <td><div class="strong" th:text="${r.namaBarang}">Nama</div><div class="hint" th:text="${r.kode + ' · ' + r.kodeBarang}">kode</div></td>
+            <td th:text="${r.jenisInteraksi}">Klaim</td>
+            <td><div th:text="${r.pemohon}">Nama</div><div class="hint" th:text="${r.emailPemohon}">email</div></td>
+            <td th:text="${r.diajukanSingkat}">-</td>
+            <td><th:block th:replace="~{fragments/ui :: statusKlaim(${r.statusCode}, ${r.statusLabel})}"></th:block></td>
+            <td>
+              <div class="chips">
+                <a class="btn p sm" th:if="${r.menunggu()}" th:href="@{/admin/antrean(verif=${r.id},status=${statusSel},q=${q})}">Verifikasi</a>
+                <a class="btn s sm" th:unless="${r.menunggu()}" th:href="@{/admin/antrean(verif=${r.id},status=${statusSel},q=${q})}">Detail</a>
+                <span class="hint" th:if="${r.disetujui() and r.barangDiarsipkan}">Laporan diarsipkan, pulihkan dulu di Arsip Barang</span>
+                <form th:if="${r.disetujui() and !r.barangDiarsipkan}" class="inline-form" method="post" th:action="@{/admin/antrean/{id}/serahkan(id=${r.id})}"
+                      data-confirm="Pastikan KTM asli sudah dicocokkan dan barang sudah diserahkan ke pemohon." data-confirm-title="Serahkan barang?" data-confirm-ok="Ya, sudah diserahkan">
+                  <button type="submit" class="btn o sm">Serahkan Barang</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-foot"><span class="hint">Menampilkan <span th:text="${items.from}">1</span>–<span th:text="${items.to}">10</span> dari <span th:text="${items.total}">0</span> pengajuan</span></div>
+  </section>
+
+  <div class="card" th:if="${items.items.isEmpty()}">
+    <div th:replace="~{fragments/ui :: empty('shield', 'Tidak ada pengajuan', 'Belum ada klaim atau tanggapan untuk filter ini.', '', '')}"></div>
+  </div>
+
+  <th:block th:replace="~{fragments/ui :: pager(${items}, @{/admin/antrean(status=${statusSel},q=${q})})}"></th:block>
+
+  <!-- Modal verifikasi (dirender server-side; ?verif=ID) -->
+  <th:block th:if="${verifDetail != null}">
+    <a class="scrim" th:href="@{/admin/antrean(status=${statusSel},q=${q})}" aria-label="Tutup" th:data-close-href="@{/admin/antrean(status=${statusSel},q=${q})}"></a>
+    <div class="modal-wrap">
+      <div class="modal lg" role="dialog" aria-modal="true" aria-labelledby="mv-t">
+        <div class="row-between">
+          <div>
+            <h2 class="t-h2" id="mv-t">Verifikasi Klaim</h2>
+            <p class="p14"><span th:text="${verifDetail.row.kode}">#KLM</span> · <span th:text="${verifDetail.row.jenisInteraksi}">Klaim</span></p>
+          </div>
+          <div class="chips">
+            <th:block th:replace="~{fragments/ui :: statusKlaim(${verifDetail.row.statusCode}, ${verifDetail.row.statusLabel})}"></th:block>
+            <a class="xbtn" th:href="@{/admin/antrean(status=${statusSel},q=${q})}" aria-label="Tutup"><svg class="ic s16"><use href="#i-x"/></svg></a>
+          </div>
+        </div>
+
+        <div class="compare">
+          <div class="card">
+            <span class="ttl">Data barang</span>
+            <img class="proof" th:if="${verifDetail.urlGambarBarang != null}" th:src="@{${verifDetail.urlGambarBarang}}" alt="Foto barang"/>
+            <div class="kv"><div class="k">Nama</div><div class="val" th:text="${verifDetail.row.namaBarang}">-</div></div>
+            <div class="kv"><div class="k">Kategori</div><div class="val" th:text="${verifDetail.kategori}">-</div></div>
+            <div class="kv"><div class="k" th:text="${verifDetail.row.hilang() ? 'Lokasi kejadian' : 'Lokasi ditemukan'}">Lokasi</div><div class="val" th:text="${verifDetail.lokasiBarang}">-</div></div>
+            <div class="kv" th:if="${verifDetail.lokasiPenyimpanan != null}"><div class="k">Disimpan di</div><div class="val" th:text="${verifDetail.lokasiPenyimpanan}">-</div></div>
+            <div class="kv"><div class="k">Deskripsi</div><div class="val" th:text="${verifDetail.deskripsiBarang}">-</div></div>
+            <div class="kv" th:if="${verifDetail.spesifikasiRahasia != null and verifDetail.spesifikasiRahasia != ''}"><div class="k">Ciri rahasia pemilik</div><div class="val" th:text="${verifDetail.spesifikasiRahasia}">-</div></div>
+            <div class="kv"><div class="k">Pelapor</div><div class="val" th:text="${verifDetail.pelaporBarang}">-</div></div>
+          </div>
+          <div class="card">
+            <span class="ttl">Bukti dari pemohon</span>
+            <div class="kv"><div class="k">Pemohon</div><div class="val" th:text="${verifDetail.row.pemohon}">-</div></div>
+            <div class="kv"><div class="k">Email · Telepon</div><div class="val" th:text="${verifDetail.row.emailPemohon + ' · ' + (verifDetail.row.teleponPemohon != null ? verifDetail.row.teleponPemohon : 'tidak diisi')}">-</div></div>
+            <div class="kv"><div class="k">Diajukan</div><div class="val" th:text="${verifDetail.row.diajukan}">-</div></div>
+            <div class="kv"><div class="k">Catatan bukti</div><div class="val" th:text="${verifDetail.catatanBukti}">-</div></div>
+            <div class="kv"><div class="k">Foto KTM</div>
+              <a th:if="${verifDetail.row.adaFotoKtm}" th:href="@{/files/ktm/{id}(id=${verifDetail.row.id})}" target="_blank" rel="noopener">
+                <img class="proof" th:src="@{/files/ktm/{id}(id=${verifDetail.row.id})}" alt="Foto KTM pemohon"/></a>
+              <div class="val" th:unless="${verifDetail.row.adaFotoKtm}">Tidak ada foto KTM</div>
+            </div>
+            <div class="kv" th:if="${verifDetail.row.adaFotoBukti}"><div class="k">Foto bukti pendukung</div>
+              <a th:href="@{/files/bukti/{id}(id=${verifDetail.row.id})}" target="_blank" rel="noopener">
+                <img class="proof" th:src="@{/files/bukti/{id}(id=${verifDetail.row.id})}" alt="Foto bukti pendukung"/></a>
+            </div>
+            <div class="kv" th:if="${verifDetail.row.ditolak() and verifDetail.row.alasanPenolakan != null}"><div class="k">Alasan penolakan</div><div class="val" th:text="${verifDetail.row.alasanPenolakan}">-</div></div>
+          </div>
+        </div>
+
+        <div class="notice warn" th:if="${verifDetail.row.menunggu() and verifDetail.perluPenerimaan}" style="margin-top:16px">
+          <svg class="ic"><use href="#i-info"/></svg>
+          <span>Barang ini <b>belum diterima di Posko</b>, jadi klaim belum bisa disetujui. Terima barangnya dulu di <a class="link" th:href="@{/admin/inventaris(tab='penerimaan')}">Inventaris &gt; Menunggu Penerimaan</a>. Kamu tetap bisa menolak klaim.</span>
+        </div>
+
+        <div th:if="${verifDetail.row.menunggu()}" class="stack gap12" style="margin-top:20px">
+          <div class="field">
+            <label class="lbl" for="alasan">Alasan penolakan <span class="hint">(wajib diisi bila menolak)</span></label>
+            <textarea id="alasan" class="in" rows="2" placeholder="Jelaskan kenapa bukti belum cukup" form="form-tolak" name="alasan"></textarea>
+          </div>
+          <div class="row-between" style="flex-wrap:wrap">
+            <a class="btn s" th:href="@{/admin/antrean(status=${statusSel},q=${q})}">Batal</a>
+            <div class="chips">
+              <form id="form-tolak" class="inline-form" method="post" th:action="@{/admin/antrean/{id}/tolak(id=${verifDetail.row.id})}">
+                <button type="submit" class="btn s" data-require-reason="alasan" style="color:var(--red)">Tolak Klaim</button>
+              </form>
+              <form th:unless="${verifDetail.perluPenerimaan}" class="inline-form" method="post" th:action="@{/admin/antrean/{id}/setujui(id=${verifDetail.row.id})}">
+                <button type="submit" class="btn p">Setujui Klaim</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div th:if="${!verifDetail.row.menunggu()}" class="row-between" style="margin-top:20px">
+          <a class="btn s" th:href="@{/admin/antrean(status=${statusSel},q=${q})}">Tutup</a>
+          <span class="hint" th:if="${verifDetail.row.disetujui() and verifDetail.row.barangDiarsipkan}">Laporan diarsipkan. Pulihkan dulu di Arsip Barang untuk melanjutkan penyerahan.</span>
+          <form th:if="${verifDetail.row.disetujui() and !verifDetail.row.barangDiarsipkan}" class="inline-form" method="post" th:action="@{/admin/antrean/{id}/serahkan(id=${verifDetail.row.id})}"
+                data-confirm="Pastikan KTM asli sudah dicocokkan dan barang sudah diserahkan ke pemohon." data-confirm-title="Serahkan barang?" data-confirm-ok="Ya, sudah diserahkan">
+            <button type="submit" class="btn p">Serahkan Barang</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </th:block>
+</th:block>
+</body>
+</html>

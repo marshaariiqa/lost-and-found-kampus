@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/adm :: shell('Manajemen Pengguna', 'pengguna', 'Manajemen Pengguna', 'Kelola peran dan status akun pengguna.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn s" th:href="@{/admin/ekspor/pengguna(q=${q},peran=${peranSel})}" download="download"><svg class="ic s16"><use href="#i-download"/></svg>Ekspor Excel</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <div class="row-between" style="flex-wrap:wrap">
+    <div class="chips">
+      <a class="chip" th:classappend="${peranSel == ''} ? 'on'" th:href="@{/admin/pengguna(q=${q})}">Semua</a>
+      <a class="chip" th:classappend="${peranSel == 'MAHASISWA'} ? 'on'" th:href="@{/admin/pengguna(peran='MAHASISWA',q=${q})}">Mahasiswa</a>
+      <a class="chip" th:classappend="${peranSel == 'ADMIN'} ? 'on'" th:href="@{/admin/pengguna(peran='ADMIN',q=${q})}">Admin</a>
+    </div>
+    <form method="get" th:action="@{/admin/pengguna}" role="search">
+      <input type="hidden" name="peran" th:value="${peranSel}"/>
+      <label class="search"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Cari</span>
+        <input class="in" type="search" name="q" th:value="${q}" placeholder="Cari nama atau email"/></label>
+    </form>
+  </div>
+
+  <section class="card x" th:if="${!items.items.isEmpty()}">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Pengguna</th><th class="hide-md">Telepon</th><th>Peran</th><th class="hide-md">Login via</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody>
+          <tr th:each="u : ${items.items}">
+            <td><div class="cellflex"><span class="av" style="width:36px;height:36px" th:text="${u.inisial}">AB</span>
+              <div><div class="strong" th:text="${u.nama}">Nama</div><div class="hint" th:text="${u.email}">email</div></div></div></td>
+            <td th:text="${u.telepon}">-</td>
+            <td><span class="badge plain" th:classappend="${u.admin()} ? 'b-pink' : 'b-gray'" th:text="${u.admin() ? 'Admin' : 'Mahasiswa'}">Mahasiswa</span></td>
+            <td th:text="${u.provider}">Google</td>
+            <td><span class="badge plain" th:classappend="${u.aktif} ? 'b-green' : 'b-red'" th:text="${u.aktif ? 'Aktif' : 'Nonaktif'}">Aktif</span></td>
+            <td><a class="btn s sm" th:href="@{/admin/pengguna(kelola=${u.id},peran=${peranSel},q=${q})}">Kelola</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-foot"><span class="hint">Menampilkan <span th:text="${items.from}">1</span>–<span th:text="${items.to}">10</span> dari <span th:text="${items.total}">0</span> pengguna</span></div>
+  </section>
+
+  <div class="card" th:if="${items.items.isEmpty()}">
+    <div th:replace="~{fragments/ui :: empty('users', 'Pengguna tidak ditemukan', 'Tidak ada pengguna yang cocok dengan pencarian atau filter.', '/admin/pengguna', 'Reset filter')}"></div>
+  </div>
+
+  <th:block th:replace="~{fragments/ui :: pager(${items}, @{/admin/pengguna(q=${q},peran=${peranSel})})}"></th:block>
+
+  <!-- Modal kelola pengguna (?kelola=ID) -->
+  <th:block th:if="${target != null}">
+    <a class="scrim" th:href="@{/admin/pengguna(peran=${peranSel},q=${q})}" aria-label="Tutup" th:data-close-href="@{/admin/pengguna(peran=${peranSel},q=${q})}"></a>
+    <div class="modal-wrap">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mk-t">
+        <div class="row-between">
+          <h2 class="t-h2" id="mk-t">Kelola Pengguna</h2>
+          <a class="xbtn" th:href="@{/admin/pengguna(peran=${peranSel},q=${q})}" aria-label="Tutup"><svg class="ic s16"><use href="#i-x"/></svg></a>
+        </div>
+        <div class="cellflex" style="display:flex;align-items:center;gap:12px;margin:16px 0">
+          <span class="av" th:text="${target.inisial}">AB</span>
+          <div><div class="strong" style="font-weight:700" th:text="${target.nama}">Nama</div><div class="hint" th:text="${target.email}">email</div></div>
+        </div>
+        <form method="post" th:action="@{/admin/pengguna/{id}(id=${target.id})}" class="stack gap16">
+          <div class="field">
+            <label class="lbl" for="peran">Peran</label>
+            <select id="peran" name="peran" class="in">
+              <option value="MAHASISWA" th:selected="${!target.admin()}">Mahasiswa</option>
+              <option value="ADMIN" th:selected="${target.admin()}">Admin</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="lbl" for="status">Status akun</label>
+            <select id="status" name="status" class="in">
+              <option value="aktif" th:selected="${target.aktif}">Aktif</option>
+              <option value="nonaktif" th:selected="${!target.aktif}">Nonaktif</option>
+            </select>
+            <span class="hint">Akun nonaktif tidak dapat masuk. Sesi yang sedang berjalan berakhir saat sesinya kedaluwarsa.</span>
+          </div>
+          <div class="row-between">
+            <a class="btn s" th:href="@{/admin/pengguna(peran=${peranSel},q=${q})}">Batal</a>
+            <button type="submit" class="btn p">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </th:block>
+</th:block>
+</body>
+</html>

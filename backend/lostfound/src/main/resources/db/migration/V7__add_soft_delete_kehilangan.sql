@@ -1,0 +1,2 @@
+ALTER TABLE kehilangan_barang
+ADD COLUMN dihapus BOOLEAN NOT NULL DEFAULT FALSE;

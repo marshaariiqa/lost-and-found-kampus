@@ -118,15 +118,15 @@ public class PenemuBarangController {
             @PathVariable Long id,
             Authentication authentication) {
         penemuBarangService.deleteTemuan(
-                id, authentication.getName()
-        );
+                id, authentication.getName());
 
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/arsip/{id}/restore")
-    public ResponseEntity<?> restoreTemuan(@PathVariable Long id) {
+    public ResponseEntity<PenemuBarangResponseDTO> restoreTemuan(@PathVariable Long id) {
         PenemuBarang barang = penemuBarangService.restoreTemuan(id);
+
         return ResponseEntity.ok(penemuBarangService.toResponseDTO(barang));
     }
 }

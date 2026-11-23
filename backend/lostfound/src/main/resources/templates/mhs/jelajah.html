@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/mhs :: shell('Jelajahi Barang', 'jelajah', 'Jelajahi Barang', 'Cari barang hilang atau temuan di seluruh kampus.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn p" th:href="@{/lapor}">Lapor Barang</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <section class="card pad stack gap16">
+    <form method="get" th:action="@{/barang}" class="stack gap12" role="search">
+      <input type="hidden" name="jenis" th:value="${jenisSel}"/>
+      <div class="filters">
+        <label class="search grow"><svg class="ic"><use href="#i-search"/></svg><span class="sr-only">Cari nama barang</span>
+          <input class="in" type="search" name="q" th:value="${q}" placeholder="Cari nama barang" maxlength="100"/></label>
+        <button type="submit" class="btn p sm">Cari</button>
+      </div>
+      <div class="filters">
+        <div class="chips" role="group" aria-label="Jenis laporan">
+          <a class="chip" th:classappend="${jenisSel == ''} ? 'on'" th:href="@{/barang(q=${q},kategori=${kategoriSel},urut=${urutSel})}">Semua</a>
+          <a class="chip" th:classappend="${jenisSel == 'hilang'} ? 'on'" th:href="@{/barang(q=${q},kategori=${kategoriSel},jenis='hilang',urut=${urutSel})}">Hilang</a>
+          <a class="chip" th:classappend="${jenisSel == 'temuan'} ? 'on'" th:href="@{/barang(q=${q},kategori=${kategoriSel},jenis='temuan',urut=${urutSel})}">Ditemukan</a>
+        </div>
+        <span class="sep" aria-hidden="true"></span>
+        <select name="kategori" class="in sm" th:classappend="${kategoriSel == 0} ? 'is-blank'" data-autosubmit="data-autosubmit" aria-label="Kategori">
+          <option value="0">Semua Kategori</option>
+          <option th:each="k : ${kategoriList}" th:value="${k.idKategori}" th:text="${k.namaKategori}" th:selected="${k.idKategori == kategoriSel}">Kategori</option>
+        </select>
+        <select name="urut" class="in sm" data-autosubmit="data-autosubmit" aria-label="Urutkan">
+          <option value="terbaru" th:selected="${urutSel == 'terbaru'}">Terbaru</option>
+          <option value="terlama" th:selected="${urutSel == 'terlama'}">Terlama</option>
+          <option value="nama" th:selected="${urutSel == 'nama'}">Nama A-Z</option>
+        </select>
+        <a class="btn g sm" th:if="${filterAktif}" th:href="@{/barang}">Reset</a>
+      </div>
+    </form>
+    <p class="hint" th:if="${items.total > 0}">
+      Menampilkan <b th:text="${items.from}">1</b>–<b th:text="${items.to}">8</b> dari <b th:text="${items.total}">0</b> barang
+    </p>
+  </section>
+
+  <div class="cards" th:if="${!items.items.isEmpty()}">
+    <th:block th:each="c : ${items.items}"><th:block th:replace="~{fragments/ui :: itemCard(${c}, false)}"></th:block></th:block>
+  </div>
+
+  <div class="card" th:if="${items.items.isEmpty() and !filterAktif}">
+    <div th:replace="~{fragments/ui :: empty('box', 'Belum ada barang', 'Belum ada laporan barang hilang maupun temuan. Jadilah yang pertama melapor.', '/lapor', 'Lapor Barang')}"></div>
+  </div>
+  <div class="card" th:if="${items.items.isEmpty() and filterAktif}">
+    <div th:replace="~{fragments/ui :: empty('search', 'Barang tidak ditemukan', 'Tidak ada barang yang cocok dengan pencarian atau filtermu. Coba kata kunci lain.', '/barang', 'Reset pencarian')}"></div>
+  </div>
+
+  <th:block th:replace="~{fragments/ui :: pager(${items}, @{/barang(q=${q},kategori=${kategoriSel},jenis=${jenisSel},urut=${urutSel})})}"></th:block>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/mhs :: shell(${d.nama}, ${d.milikSaya ? 'laporan' : 'jelajah'}, 'Detail Barang', ${d.kode}, ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn s" th:href="${d.milikSaya} ? @{/laporan} : @{/barang}"><svg class="ic s16" style="transform:rotate(90deg)"><use href="#i-chev"/></svg>Kembali</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <div class="det">
+    <div class="ph" th:classappend="${d.urlGambar != null} ? 'photo'">
+      <a th:if="${d.urlGambar != null}" th:href="@{${d.urlGambar}}" data-zoom="data-zoom" title="Klik untuk memperbesar">
+        <img th:src="@{${d.urlGambar}}" th:alt="'Foto ' + ${d.nama}"/>
+        <span class="zoom-hint">Perbesar</span>
+      </a>
+      <th:block th:unless="${d.urlGambar != null}">
+        <svg class="ic s44"><use href="#i-img"/></svg>
+        <span>Belum ada foto</span>
+      </th:block>
+    </div>
+
+    <div class="card x pad stack gap20">
+      <div class="chips">
+        <span class="badge" th:classappend="${d.hilang()} ? 'b-red' : 'b-green'" th:text="${d.jenisLabel()}">Lost</span>
+        <th:block th:replace="~{fragments/ui :: statusBarang(${d.status}, ${d.statusLabel})}"></th:block>
+        <span class="hint" th:text="${d.kode}">#HLG-00001</span>
+      </div>
+      <h2 class="detail-title" th:text="${d.nama}">Nama barang</h2>
+
+      <div class="kv-grid">
+        <div class="kv"><div class="k" th:text="${d.hilang() ? 'Lokasi kejadian' : 'Lokasi ditemukan'}">Lokasi</div><div class="v" th:text="${d.lokasi}">-</div></div>
+        <div class="kv"><div class="k" th:text="${d.hilang() ? 'Tanggal kejadian' : 'Tanggal ditemukan'}">Tanggal</div><div class="v" th:text="${d.tanggal}">-</div></div>
+        <div class="kv"><div class="k">Kategori</div><div class="v" th:text="${d.kategori}">-</div></div>
+        <div class="kv"><div class="k" th:text="${d.hilang() ? 'Dilaporkan oleh' : 'Ditemukan oleh'}">Pelapor</div><div class="v" th:text="${d.pelapor}">-</div></div>
+        <div class="kv" th:if="${!d.hilang() and d.lokasiPenyimpanan != null}"><div class="k">Disimpan di</div><div class="v" th:text="${d.lokasiPenyimpanan}">Posko FIK</div></div>
+      </div>
+
+      <div class="kv"><div class="k">Deskripsi</div><p class="p14" style="white-space:pre-wrap" th:text="${d.deskripsi}">Deskripsi</p></div>
+
+      <div class="kv" th:if="${d.milikSaya and d.spesifikasiRahasia != null and d.spesifikasiRahasia != ''}">
+        <div class="k">Ciri rahasia (hanya kamu dan admin yang bisa melihat)</div>
+        <p class="p14" style="white-space:pre-wrap" th:text="${d.spesifikasiRahasia}">-</p>
+      </div>
+
+      <!-- Satu panel informasi: hanya baris yang relevan dengan status laporan yang tampil -->
+      <section class="infopanel" aria-label="Informasi laporan"
+               th:if="${(d.milikSaya and d.tersedia() and d.pengajuanMenunggu == 0) or (!d.hilang() and d.tersedia() and !d.diPosko) or (d.milikSaya and d.pengajuanMenunggu > 0) or (d.hilang() and !d.milikSaya) or (!d.hilang() and !d.milikSaya and d.bisaKlaim) or !d.tersedia()}">
+        <div class="inforow" th:if="${d.milikSaya and d.pengajuanMenunggu > 0}">
+          <span class="ico"><svg class="ic s18"><use href="#i-shield"/></svg></span>
+          <div class="txt">
+            <div class="ttl">Pengajuan masuk <span class="badge b-amber" style="margin-left:8px"><span th:text="${d.pengajuanMenunggu}">1</span> menunggu verifikasi</span></div>
+            <p>Admin sedang memeriksa pengajuan pada laporanmu. Kamu akan mendapat notifikasi saat ada hasilnya.</p>
+          </div>
+        </div>
+        <div class="inforow" th:if="${!d.hilang() and d.tersedia() and !d.diPosko}">
+          <span class="ico"><svg class="ic s18"><use href="#i-box"/></svg></span>
+          <div class="txt">
+            <div class="ttl">Belum diterima di posko</div>
+            <p th:text="${d.milikSaya ? 'Serahkan barang ke ' + posko.lokasi + ' agar tercatat di inventaris dan bisa diklaim pemiliknya.' : 'Admin akan memastikan barang sudah diterima di posko sebelum menyetujui klaim.'}">Info</p>
+          </div>
+        </div>
+        <div class="inforow" th:if="${d.milikSaya and d.tersedia() and d.pengajuanMenunggu == 0}">
+          <span class="ico"><svg class="ic s18"><use href="#i-user"/></svg></span>
+          <div class="txt">
+            <div class="ttl">Ini laporanmu</div>
+            <p>Tombol <span th:text="${d.hilang() ? 'Saya Menemukan Ini' : 'Ajukan Klaim'}">Ajukan Klaim</span> hanya muncul untuk mahasiswa lain. Pantau perkembangan dari <a class="link" th:href="@{/laporan}">Laporan Saya</a>.</p>
+          </div>
+        </div>
+        <div class="inforow" th:if="${d.hilang() and !d.milikSaya}">
+          <span class="ico"><svg class="ic s18"><use href="#i-lock"/></svg></span>
+          <div class="txt">
+            <div class="ttl">Ciri rahasia dijaga</div>
+            <p>Hanya admin yang melihat ciri rahasia pemilik saat memverifikasi tanggapanmu.</p>
+          </div>
+        </div>
+        <div class="inforow" th:if="${!d.hilang() and !d.milikSaya and d.bisaKlaim}">
+          <span class="ico"><svg class="ic s18"><use href="#i-lock"/></svg></span>
+          <div class="txt">
+            <div class="ttl">Bukti kepemilikan diperlukan</div>
+            <p>Kamu akan menjelaskan ciri barang dan mengunggah foto KTM untuk diverifikasi admin.</p>
+          </div>
+        </div>
+        <div class="inforow" th:if="${d.status == 'SELESAI'}">
+          <span class="ico selesai-ico"><svg class="ic s18"><use href="#i-check"/></svg></span>
+          <div class="txt">
+            <div class="ttl">Laporan selesai</div>
+            <p>Proses penyerahan sudah tuntas, jadi laporan ini tidak menerima pengajuan baru dan tersimpan sebagai riwayat.</p>
+          </div>
+        </div>
+        <div class="inforow" th:if="${d.status == 'DIARSIPKAN'}">
+          <span class="ico"><svg class="ic s18"><use href="#i-arch"/></svg></span>
+          <div class="txt">
+            <div class="ttl" th:text="${d.judulArsip}">Laporan Diarsipkan</div>
+            <p th:text="${d.pesanArsip}">Pesan</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="chips actions-row">
+        <a th:if="${d.bisaKlaim}" class="btn p" th:href="@{/klaim/baru/{j}/{id}(j=${d.jenisPath()},id=${d.id})}"
+           th:text="${d.hilang() ? 'Saya Menemukan Ini' : 'Ajukan Klaim'}">Ajukan Klaim</a>
+        <a th:if="${d.idInteraksiSaya != null}" class="btn" th:classappend="${d.bisaKlaim} ? 's' : 'p'"
+           th:href="@{/klaim/{id}(id=${d.idInteraksiSaya})}">Lihat Status Pengajuan</a>
+        <button type="button" class="btn s" data-copy="data-copy"><svg class="ic s16"><use href="#i-share"/></svg>Bagikan</button>
+      </div>
+    </div>
+  </div>
+</th:block>
+</body>
+</html>

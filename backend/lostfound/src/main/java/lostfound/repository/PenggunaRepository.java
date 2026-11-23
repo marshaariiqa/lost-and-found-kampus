@@ -11,4 +11,8 @@ public interface PenggunaRepository extends JpaRepository<Pengguna, Integer> {
     boolean existsByEmail(String email);
 
     Optional<Pengguna> findByGoogleId(String googleId);
+
+    long countByAktifTrue();
+
+    java.util.List<Pengguna> findAllByOrderByNamaLengkapAsc();
 }

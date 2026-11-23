@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{${layoutName} :: shell('Pengaturan Akun', 'profil', 'Pengaturan Akun', 'Ubah data diri dan keamanan akunmu.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn s" th:href="@{/profil}">Kembali ke Profil</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <th:block th:replace="~{fragments/ui :: akunTabs('pengaturan')}"></th:block>
+  <div class="stack gap24" style="max-width:760px">
+    <form id="data" th:action="@{/pengaturan/profil}" method="post" data-validate="data-validate" class="card x pad stack gap16">
+      <h2 class="t-h2">Ubah data diri</h2>
+      <div class="alert bad" th:if="${errProfil != null}" role="alert"><span th:text="${errProfil}">Error</span></div>
+
+      <div class="field">
+        <label class="lbl" for="nama">Nama lengkap<span class="req">*</span></label>
+        <input id="nama" name="nama" class="in" type="text" required="required" maxlength="150" th:value="${namaInput != null ? namaInput : me.nama}"/>
+      </div>
+      <div class="field">
+        <label class="lbl" for="email">Email</label>
+        <input id="email" class="in" type="email" readonly="readonly" th:value="${me.email}"/>
+        <span class="hint">Email tidak dapat diubah.</span>
+      </div>
+      <div class="field">
+        <label class="lbl" for="telepon">Nomor telepon</label>
+        <input id="telepon" name="telepon" class="in" type="tel" maxlength="20" placeholder="08xxxxxxxxxx" th:value="${teleponInput != null ? teleponInput : (me.telepon != null ? me.telepon : '')}"/>
+        <span class="hint">Dipakai admin untuk menghubungimu saat memverifikasi klaim.</span>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn p" data-loading="Menyimpan...">Simpan Perubahan</button>
+      </div>
+    </form>
+
+    <form id="sandi" th:if="${me.provider == 'LOCAL'}" th:action="@{/pengaturan/sandi}" method="post" data-validate="data-validate" class="card x pad stack gap16">
+      <h2 class="t-h2">Ubah kata sandi</h2>
+      <div class="alert bad" th:if="${errSandi != null}" role="alert"><span th:text="${errSandi}">Error</span></div>
+
+      <div class="field">
+        <label class="lbl" for="lama">Kata sandi saat ini<span class="req">*</span></label>
+        <div class="pw"><input id="lama" name="lama" class="in" type="password" required="required" autocomplete="current-password"/>
+          <button type="button" data-eye="data-eye" aria-label="Tampilkan kata sandi"><svg class="ic s18"><use href="#i-eye"/></svg></button></div>
+      </div>
+      <div class="field">
+        <label class="lbl" for="baru">Kata sandi baru<span class="req">*</span></label>
+        <div class="pw"><input id="baru" name="baru" class="in" type="password" required="required" minlength="8" autocomplete="new-password" data-match-source="data-match-source"/>
+          <button type="button" data-eye="data-eye" aria-label="Tampilkan kata sandi"><svg class="ic s18"><use href="#i-eye"/></svg></button></div>
+        <span class="hint">Minimal 8 karakter.</span>
+      </div>
+      <div class="field">
+        <label class="lbl" for="konfirmasi">Konfirmasi kata sandi baru<span class="req">*</span></label>
+        <input id="konfirmasi" name="konfirmasi" class="in" type="password" required="required" autocomplete="new-password" data-match-target="data-match-target"/>
+        <span class="err-msg" data-match-hint="data-match-hint"></span>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn p" data-loading="Menyimpan...">Ubah Kata Sandi</button>
+      </div>
+    </form>
+
+    <section th:if="${me.provider != 'LOCAL'}" class="card x pad stack gap8">
+      <h2 class="t-h2">Keamanan</h2>
+      <p class="p14">Kamu masuk lewat Google, jadi kata sandi dikelola oleh akun Google-mu dan tidak diubah dari sini.</p>
+    </section>
+
+    <section class="card x pad stack gap12">
+      <h2 class="t-h2">Sesi</h2>
+      <form th:action="@{/logout}" method="post"><button type="submit" class="btn s"><svg class="ic s16"><use href="#i-out"/></svg>Keluar dari FindUp!</button></form>
+    </section>
+  </div>
+</th:block>
+</body>
+</html>

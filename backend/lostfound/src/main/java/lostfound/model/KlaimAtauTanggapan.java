@@ -34,6 +34,9 @@ public class KlaimAtauTanggapan {
     @Column(name = "foto_ktm")
     private String fotoKtm;
 
+    @Column(name = "foto_bukti")
+    private String fotoBukti;
+
     @Column(name = "alasan_penolakan", columnDefinition = "TEXT")
     private String alasanPenolakan;
 
@@ -49,6 +52,9 @@ public class KlaimAtauTanggapan {
 
     @Column(name = "waktu_verifikasi")
     private LocalDateTime waktuVerifikasi;
+
+    @Column(name = "waktu_selesai")
+    private LocalDateTime waktuSelesai;
 
     public KlaimAtauTanggapan() {
     }
@@ -149,5 +155,21 @@ public class KlaimAtauTanggapan {
 
     public void setWaktuVerifikasi(LocalDateTime waktuVerifikasi) {
         this.waktuVerifikasi = waktuVerifikasi;
+    }
+
+    public LocalDateTime getWaktuSelesai() {
+        return waktuSelesai;
+    }
+
+    public void setWaktuSelesai(LocalDateTime waktuSelesai) {
+        this.waktuSelesai = waktuSelesai;
+    }
+
+    public String getFotoBukti() {
+        return fotoBukti;
+    }
+
+    public void setFotoBukti(String fotoBukti) {
+        this.fotoBukti = fotoBukti;
     }
 }

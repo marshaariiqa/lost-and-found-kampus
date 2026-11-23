@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/mhs :: shell('Edit Laporan', 'laporan', 'Edit Laporan', ${e.jenis == 'HILANG' ? 'Laporan barang hilang' : 'Laporan barang temuan'}, ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn s" th:href="@{/laporan}"><svg class="ic s16" style="transform:rotate(90deg)"><use href="#i-chev"/></svg>Kembali</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <form th:action="@{/laporan/{j}/{id}/edit(j=${e.jenis == 'HILANG' ? 'hilang' : 'temuan'},id=${e.id})}" method="post" enctype="multipart/form-data"
+        data-validate="data-validate" class="card x pad stack gap16" style="max-width:760px">
+
+    <div class="field">
+      <label class="lbl" for="nama">Nama barang<span class="req">*</span></label>
+      <input id="nama" name="nama" class="in" th:classappend="${errors['nama'] != null} ? 'err'" type="text" required="required" maxlength="150" th:value="${f.nama}"/>
+      <span class="err-msg" th:if="${errors['nama'] != null}" th:text="${errors['nama']}">Error</span>
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="idKategori">Kategori<span class="req">*</span></label>
+      <select id="idKategori" name="idKategori" class="in" th:classappend="${errors['idKategori'] != null} ? 'err'" required="required">
+        <option value="">Pilih kategori</option>
+        <option th:each="k : ${kategoriList}" th:value="${k.idKategori}" th:text="${k.namaKategori}" th:selected="${f.idKategori == '' + k.idKategori}">Kategori</option>
+      </select>
+      <span class="err-msg" th:if="${errors['idKategori'] != null}" th:text="${errors['idKategori']}">Error</span>
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="deskripsi"><span th:text="${e.jenis == 'HILANG' ? 'Deskripsi publik' : 'Deskripsi barang'}">Deskripsi</span><span class="req">*</span></label>
+      <textarea id="deskripsi" name="deskripsi" class="in" th:classappend="${errors['deskripsi'] != null} ? 'err'" rows="3" required="required" th:text="${f.deskripsi}"></textarea>
+      <span class="err-msg" th:if="${errors['deskripsi'] != null}" th:text="${errors['deskripsi']}">Error</span>
+    </div>
+
+    <div class="field" th:if="${e.jenis == 'HILANG'}">
+      <label class="lbl" for="ciri">Ciri rahasia <span class="hint">(opsional)</span></label>
+      <textarea id="ciri" name="ciri" class="in" rows="2" th:text="${f.ciri}"></textarea>
+      <span class="hint">Tidak ditampilkan ke publik. Hanya admin yang melihatnya saat memverifikasi.</span>
+    </div>
+
+    <div class="kv-grid">
+      <div class="field">
+        <label class="lbl" for="lokasi"><span th:text="${e.jenis == 'HILANG' ? 'Lokasi kejadian' : 'Lokasi ditemukan'}">Lokasi</span><span class="req">*</span></label>
+        <input id="lokasi" name="lokasi" class="in" th:classappend="${errors['lokasi'] != null} ? 'err'" type="text" required="required" maxlength="255" th:value="${f.lokasi}"/>
+        <span class="err-msg" th:if="${errors['lokasi'] != null}" th:text="${errors['lokasi']}">Error</span>
+      </div>
+      <div class="field">
+        <label class="lbl" for="tanggal"><span th:text="${e.jenis == 'HILANG' ? 'Tanggal kejadian' : 'Tanggal ditemukan'}">Tanggal</span><span class="req">*</span></label>
+        <input id="tanggal" name="tanggal" class="in" th:classappend="${errors['tanggal'] != null} ? 'err'" type="date" required="required" th:max="${hariIni}" th:value="${f.tanggal}"/>
+        <span class="err-msg" th:if="${errors['tanggal'] != null}" th:text="${errors['tanggal']}">Error</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="lbl">Foto barang <span class="hint">(opsional, PNG/JPG maks. 5 MB)</span></span>
+      <div class="ph photo" style="max-width:320px;aspect-ratio:16/10" th:if="${e.urlGambar != null}"><img th:src="@{${e.urlGambar}}" alt="Foto saat ini"/></div>
+      <label class="drop" th:classappend="${errors['foto'] != null} ? 'err'">
+        <span class="ic-up"><svg class="ic"><use href="#i-up"/></svg></span>
+        <span class="nm" th:data-default="${e.urlGambar != null ? 'Klik untuk mengganti foto' : 'Klik untuk memilih foto'}" th:text="${e.urlGambar != null ? 'Klik untuk mengganti foto' : 'Klik untuk memilih foto'}">Klik untuk memilih foto</span>
+        <input type="file" name="foto" accept="image/png,image/jpeg"/>
+      </label>
+      <span class="err-msg file-msg" th:if="${errors['foto'] != null}" th:text="${errors['foto']}">Error</span>
+      <span class="hint" th:if="${e.urlGambar != null}">Biarkan kosong untuk tetap memakai foto saat ini.</span>
+    </div>
+
+    <div class="form-actions">
+      <span class="hint">Kolom bertanda * wajib diisi.</span>
+      <a class="btn s" th:href="@{/laporan}">Batal</a>
+      <button type="submit" class="btn p" data-loading="Menyimpan...">Simpan Perubahan</button>
+    </div>
+  </form>
+</th:block>
+</body>
+</html>

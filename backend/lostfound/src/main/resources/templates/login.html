@@ -1,53 +1,52 @@
 <!DOCTYPE html>
 <html lang="id" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Lost and Found Kampus</title>
-</head>
+<head th:replace="~{fragments/common :: head('Masuk')}"></head>
 <body>
-    <h1>Login Lost and Found Kampus</h1>
+<div th:replace="~{fragments/icons :: sprite}"></div>
+<div class="auth">
+  <aside th:replace="~{fragments/auth :: panel('Temukan barangmu, bantu temanmu.', 'Platform Lost &amp; Found untuk civitas FIK UPNVJ. Laporkan barang hilang, lihat barang temuan, dan ajukan klaim dengan aman.')}"></aside>
+  <main class="rp">
+    <div class="box stack gap24">
+      <div class="stack gap8">
+        <h1>Masuk ke FindUp!</h1>
+        <p class="p14">Gunakan akun kampus atau email yang sudah terdaftar.</p>
+      </div>
 
-    <p th:if="${param.registered}">
-        Registrasi berhasil! Silakan login menggunakan akunmu.
-    </p>
+      <div class="alert info" th:if="${sessionExpired}" role="status">Sesimu berakhir karena tidak ada aktivitas selama 30 menit. Silakan masuk lagi.</div>
+      <div class="alert bad" th:if="${loginError}" role="alert">Email atau kata sandi salah, atau akunmu dinonaktifkan oleh admin.</div>
+      <div class="alert bad" th:if="${oauthError == 'invalid_email'}" role="alert">Masuk dengan Google hanya untuk email kampus (@mahasiswa.upnvj.ac.id atau @upnvj.ac.id).</div>
+      <div class="alert bad" th:if="${oauthError == 'disabled'}" role="alert">Akunmu dinonaktifkan oleh admin.</div>
+      <div class="alert bad" th:if="${oauthError != '' and oauthError != 'invalid_email' and oauthError != 'disabled'}" role="alert">Masuk dengan Google gagal. Silakan coba lagi.</div>
 
-    <p th:if="${param.error}">
-        Email atau password salah.
-    </p>
-
-    <p th:if="${param.oauth2Error != null and param.oauth2Error[0] == 'invalid_email'}">
-        Login hanya diperbolehkan menggunakan email kampus UPNVJ.
-    </p>
-
-    <p th:if="${param.oauth2Error != null and param.oauth2Error[0] == 'failed'}">
-        Login dengan Google gagal. Silakan coba lagi.
-    </p>
-
-    <p th:if="${param.logout}">
-        Kamu berhasil logout.
-    </p>
-
-    <form th:action="@{/login}" method="post">
-        <div>
-            <label for="username">Email</label>
-            <input type="email" id="username" name="username" required>
+      <form th:action="@{/login}" method="post" data-validate="data-validate" class="stack gap16">
+        <div class="field">
+          <label class="lbl" for="username">Email<span class="req">*</span></label>
+          <input id="username" name="username" class="in" type="email" required="required" autocomplete="username" placeholder="nama@email.com"/>
         </div>
-
-        <div>
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
+        <div class="field">
+          <label class="lbl" for="password">Kata sandi<span class="req">*</span></label>
+          <div class="pw">
+            <input id="password" name="password" class="in" type="password" required="required" autocomplete="current-password" placeholder="Masukkan kata sandi"/>
+            <button type="button" data-eye="data-eye" aria-label="Tampilkan kata sandi"><svg class="ic s18"><use href="#i-eye"/></svg></button>
+          </div>
         </div>
+        <button type="submit" class="btn p w" data-loading="Memproses...">Masuk</button>
+      </form>
 
-        <button type="submit">Login</button>
-    </form>
+      <div class="or">atau</div>
 
-    <p>Belum punya akun? <a th:href="@{/register}">Daftar di sini</a></p>
+      <a class="btn s w" th:href="@{/oauth2/authorization/google}">
+        <svg th:replace="~{fragments/auth :: google}"></svg>
+        Masuk dengan Google
+      </a>
 
-    <hr>
-
-    <a th:href="@{/oauth2/authorization/google}">
-        Login dengan Google
-    </a>
+      <p class="p14" style="text-align:center">Belum punya akun? <a class="link" th:href="@{/register}">Daftar</a> · <a class="link" th:href="@{/}">Kembali ke beranda</a></p>
+    </div>
+  </main>
+</div>
+<div id="flash" hidden="hidden"
+     th:data-sukses="${loggedOut} ? 'Berhasil keluar.' : ''"
+     th:data-error="${sessionExpired} ? 'Sesi berakhir. Silakan masuk lagi.' : ''"></div>
+<div id="toast-root" aria-live="polite"></div>
 </body>
 </html>

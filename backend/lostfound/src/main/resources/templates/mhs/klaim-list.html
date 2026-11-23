@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/mhs :: shell('Status Klaim', 'klaim', 'Status Klaim', 'Pantau klaim dan tanggapan yang kamu ajukan.', ~{}, ~{::content})}">
+<body>
+<th:block th:fragment="content">
+  <div class="notice">
+    <svg class="ic"><use href="#i-info"/></svg>
+    <span>Halaman ini berisi <b>klaim dan tanggapan yang kamu ajukan</b> pada laporan orang lain. Laporan yang kamu buat sendiri ada di <a class="link" th:href="@{/laporan}">Laporan Saya</a>.</span>
+  </div>
+
+  <div class="chips">
+    <a class="chip" th:classappend="${statusSel == ''} ? 'on'" th:href="@{/klaim}">Semua · <span th:text="${total}">0</span></a>
+    <a class="chip" th:classappend="${statusSel == 'wait'} ? 'on'" th:href="@{/klaim(status='wait')}">Menunggu Verifikasi · <span th:text="${nMenunggu}">0</span></a>
+    <a class="chip" th:classappend="${statusSel == 'ok'} ? 'on'" th:href="@{/klaim(status='ok')}">Disetujui · <span th:text="${nDisetujui}">0</span></a>
+    <a class="chip" th:classappend="${statusSel == 'done'} ? 'on'" th:href="@{/klaim(status='done')}">Selesai · <span th:text="${nSelesai}">0</span></a>
+    <a class="chip" th:classappend="${statusSel == 'no'} ? 'on'" th:href="@{/klaim(status='no')}">Ditolak · <span th:text="${nDitolak}">0</span></a>
+  </div>
+
+  <section class="card x" th:if="${!rows.isEmpty()}">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>Barang</th><th>Jenis</th><th>Diajukan</th><th class="hide-md">Tenggat</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr th:each="r : ${rows}">
+            <td><div class="strong" th:text="${r.namaBarang}">Nama</div><div class="hint" th:text="${r.kode + ' · ' + r.kodeBarang}">kode</div></td>
+            <td th:text="${r.jenisInteraksi}">Klaim</td>
+            <td th:text="${r.diajukanSingkat}">-</td>
+            <td th:text="${r.menunggu() ? r.tenggat : '-'}">-</td>
+            <td>
+              <th:block th:replace="~{fragments/ui :: statusKlaim(${r.statusCode}, ${r.statusLabel})}"></th:block>
+              <div class="hint" th:if="${r.ditolak() and r.alasanPenolakan != null}" th:text="${r.alasanPenolakan}" style="max-width:240px;margin-top:4px">alasan</div>
+            </td>
+            <td><a class="btn s sm" th:href="@{/klaim/{id}(id=${r.id})}">Detail</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="card" th:if="${rows.isEmpty() and total == 0}">
+    <div th:replace="~{fragments/ui :: empty('shield', 'Belum ada klaim atau tanggapan', 'Saat kamu mengajukan klaim barang temuan atau menanggapi laporan kehilangan, statusnya muncul di sini.', '/barang', 'Jelajahi Barang')}"></div>
+  </div>
+  <div class="card" th:if="${rows.isEmpty() and total > 0}">
+    <div th:replace="~{fragments/ui :: empty('search', 'Tidak ada pengajuan dengan status ini', 'Pilih status lain untuk melihat pengajuanmu.', '/klaim', 'Lihat semua')}"></div>
+  </div>
+</th:block>
+</body>
+</html>

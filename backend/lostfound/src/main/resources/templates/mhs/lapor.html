@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/mhs :: shell('Lapor Barang', 'lapor', 'Lapor Barang', 'Isi detail barang agar mudah dikenali pemiliknya atau penemunya.', ~{}, ~{::content})}">
+<body>
+<th:block th:fragment="content">
+  <form th:action="@{/lapor}" method="post" enctype="multipart/form-data" data-validate="data-validate" data-wizard="data-wizard" data-start="1" class="stack gap16" style="max-width:860px">
+    <input type="hidden" name="jenis" th:value="${form.jenis}"/>
+
+    <div class="card flow">
+      <div class="stp" aria-label="Langkah pelaporan">
+        <div class="st on"><span class="ci">1</span>Detail</div><div class="ln"></div>
+        <div class="st"><span class="ci">2</span>Lokasi &amp; Foto</div><div class="ln"></div>
+        <div class="st"><span class="ci">3</span>Selesai</div>
+      </div>
+    </div>
+
+    <!-- Langkah 1 -->
+    <section class="card x pad stack gap16" data-step="1">
+      <div class="stack gap8">
+        <span class="lbl">Jenis laporan</span>
+        <div class="chips">
+          <button type="button" class="chip" th:classappend="${form.hilang()} ? 'on'" data-jenis="hilang">Barang hilang</button>
+          <button type="button" class="chip" th:classappend="${!form.hilang()} ? 'on'" data-jenis="temuan">Barang temuan</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="lbl" for="nama">Nama barang<span class="req">*</span></label>
+        <input id="nama" name="nama" class="in" th:classappend="${errors['nama'] != null} ? 'err'" type="text" required="required" maxlength="150"
+               placeholder="Contoh: Dompet kulit cokelat" th:value="${form.nama}"/>
+        <span class="err-msg" th:if="${errors['nama'] != null}" th:text="${errors['nama']}">Error</span>
+      </div>
+
+      <div class="field">
+        <label class="lbl" for="idKategori">Kategori<span class="req">*</span></label>
+        <select id="idKategori" name="idKategori" class="in" th:classappend="${errors['idKategori'] != null} ? 'err'" required="required">
+          <option value="">Pilih kategori</option>
+          <option th:each="k : ${kategoriList}" th:value="${k.idKategori}" th:text="${k.namaKategori}" th:selected="${form.idKategori == '' + k.idKategori}">Kategori</option>
+        </select>
+        <span class="err-msg" th:if="${errors['idKategori'] != null}" th:text="${errors['idKategori']}">Error</span>
+        <span class="hint err" th:if="${kategoriList.isEmpty()}">Belum ada kategori barang. Minta admin menambahkannya di menu Pengaturan.</span>
+      </div>
+
+      <div class="field">
+        <label class="lbl" for="deskripsi"><span data-text-hilang="Deskripsi publik" data-text-temuan="Deskripsi barang" th:text="${form.hilang() ? 'Deskripsi publik' : 'Deskripsi barang'}">Deskripsi publik</span><span class="req">*</span></label>
+        <textarea id="deskripsi" name="deskripsi" class="in" th:classappend="${errors['deskripsi'] != null} ? 'err'" required="required" rows="3"
+                  placeholder="Warna, merek, ukuran, atau kondisi yang boleh dilihat publik" th:text="${form.deskripsi}"></textarea>
+        <span class="err-msg" th:if="${errors['deskripsi'] != null}" th:text="${errors['deskripsi']}">Error</span>
+      </div>
+
+      <div class="field" data-only="hilang" th:hidden="${!form.hilang()}">
+        <label class="lbl" for="ciri">Ciri rahasia <span class="hint">(opsional)</span></label>
+        <textarea id="ciri" name="ciri" class="in" rows="2" placeholder="Ciri khusus yang hanya pemilik yang tahu, mis. isi dompet atau goresan tertentu" th:text="${form.ciri}"></textarea>
+        <span class="hint">Tidak ditampilkan ke publik. Hanya admin yang bisa melihatnya saat memverifikasi.</span>
+      </div>
+
+      <div class="form-actions">
+        <span class="hint" data-gh="data-gh">Lengkapi kolom bertanda * untuk lanjut.</span>
+        <button type="button" class="btn p" data-next="data-next" disabled="disabled">Berikutnya</button>
+      </div>
+    </section>
+
+    <!-- Langkah 2 -->
+    <section class="card x pad stack gap16" data-step="2" hidden="hidden">
+      <div class="field">
+        <label class="lbl" for="lokasi"><span data-text-hilang="Lokasi kejadian" data-text-temuan="Lokasi ditemukan" th:text="${form.hilang() ? 'Lokasi kejadian' : 'Lokasi ditemukan'}">Lokasi kejadian</span><span class="req">*</span></label>
+        <input id="lokasi" name="lokasi" class="in" th:classappend="${errors['lokasi'] != null} ? 'err'" type="text" required="required" maxlength="255"
+               data-ph-hilang="Contoh: Perpustakaan lantai 2" data-ph-temuan="Contoh: Kantin FIK dekat kasir" placeholder="Contoh: Perpustakaan lantai 2" th:value="${form.lokasi}"/>
+        <span class="err-msg" th:if="${errors['lokasi'] != null}" th:text="${errors['lokasi']}">Error</span>
+      </div>
+
+      <div class="field">
+        <label class="lbl" for="tanggal"><span data-text-hilang="Tanggal kejadian" data-text-temuan="Tanggal ditemukan" th:text="${form.hilang() ? 'Tanggal kejadian' : 'Tanggal ditemukan'}">Tanggal kejadian</span><span class="req">*</span></label>
+        <input id="tanggal" name="tanggal" class="in" th:classappend="${errors['tanggal'] != null} ? 'err'" type="date" required="required" th:max="${hariIni}" th:value="${form.tanggal}"/>
+        <span class="err-msg" th:if="${errors['tanggal'] != null}" th:text="${errors['tanggal']}">Error</span>
+      </div>
+
+      <div class="field" data-only="temuan" th:hidden="${form.hilang()}">
+        <span class="lbl">Lokasi penyimpanan barang</span>
+        <input class="in" type="text" value="Posko FIK" readonly="readonly" aria-readonly="true"/>
+        <span class="hint">Setelah melapor, serahkan barangnya ke posko. Barang baru masuk inventaris setelah admin menerimanya.</span>
+      </div>
+
+      <div class="field">
+        <span class="lbl">Foto barang <span class="hint">(opsional, PNG/JPG maks. 5 MB)</span></span>
+        <label class="drop" th:classappend="${errors['foto'] != null} ? 'err'">
+          <span class="ic-up"><svg class="ic"><use href="#i-up"/></svg></span>
+          <span class="nm" data-default="Klik untuk memilih foto">Klik untuk memilih foto</span>
+          <span class="hint">Foto yang jelas membantu pemilik mengenali barangnya</span>
+          <input type="file" name="foto" accept="image/png,image/jpeg"/>
+        </label>
+        <span class="err-msg file-msg" th:if="${errors['foto'] != null}" th:text="${errors['foto']}">Error</span>
+      </div>
+
+      <div class="form-actions">
+        <span class="hint" data-gh="data-gh">Lengkapi kolom bertanda * untuk lanjut.</span>
+        <button type="button" class="btn s" data-prev="data-prev">Kembali</button>
+        <button type="button" class="btn p" data-next="data-next" disabled="disabled">Tinjau Laporan</button>
+      </div>
+    </section>
+
+    <!-- Langkah 3 -->
+    <section class="card x pad stack gap16" data-step="3" hidden="hidden">
+      <h2 class="t-h2">Periksa laporanmu</h2>
+      <div class="sum">
+        <div class="row"><span>Jenis laporan</span><span data-summary-jenis="data-summary-jenis">-</span></div>
+        <div class="row"><span>Nama barang</span><span data-summary="nama">-</span></div>
+        <div class="row"><span>Kategori</span><span data-summary="idKategori">-</span></div>
+        <div class="row"><span>Lokasi</span><span data-summary="lokasi">-</span></div>
+        <div class="row"><span>Tanggal</span><span data-summary="tanggal">-</span></div>
+      </div>
+      <div class="notice"><svg class="ic"><use href="#i-info"/></svg><span>Laporan akan langsung tampil di daftar barang kampus.</span></div>
+      <div class="form-actions">
+        <button type="button" class="btn s" data-prev="data-prev">Ubah</button>
+        <button type="submit" class="btn p" data-loading="Mengirim...">Kirim Laporan</button>
+      </div>
+    </section>
+  </form>
+</th:block>
+</body>
+</html>

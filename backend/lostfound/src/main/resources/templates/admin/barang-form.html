@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/adm :: shell('Tambah Barang', 'inventaris', 'Tambah Barang', 'Catat barang temuan yang sudah kamu terima langsung di Posko.', ~{::actions}, ~{::content})}">
+<body>
+<th:block th:fragment="actions">
+  <a class="btn s" th:href="@{/admin/inventaris}"><svg class="ic s16" style="transform:rotate(90deg)"><use href="#i-chev"/></svg>Kembali</a>
+</th:block>
+
+<th:block th:fragment="content">
+  <form th:action="@{/admin/inventaris/baru}" method="post" enctype="multipart/form-data" data-validate="data-validate" class="card x pad stack gap16" style="max-width:760px">
+    <div class="field">
+      <label class="lbl" for="nama">Nama barang<span class="req">*</span></label>
+      <input id="nama" name="nama" class="in" th:classappend="${errors['nama'] != null} ? 'err'" type="text" required="required" maxlength="150" th:value="${form.nama}"/>
+      <span class="err-msg" th:if="${errors['nama'] != null}" th:text="${errors['nama']}">Error</span>
+    </div>
+    <div class="field">
+      <label class="lbl" for="idKategori">Kategori<span class="req">*</span></label>
+      <select id="idKategori" name="idKategori" class="in" th:classappend="${errors['idKategori'] != null} ? 'err'" required="required">
+        <option value="">Pilih kategori</option>
+        <option th:each="k : ${kategoriList}" th:value="${k.idKategori}" th:text="${k.namaKategori}" th:selected="${form.idKategori == '' + k.idKategori}">Kategori</option>
+      </select>
+      <span class="err-msg" th:if="${errors['idKategori'] != null}" th:text="${errors['idKategori']}">Error</span>
+      <span class="hint err" th:if="${kategoriList.isEmpty()}">Belum ada kategori. Tambahkan dulu di menu Pengaturan.</span>
+    </div>
+    <div class="field">
+      <label class="lbl" for="deskripsi">Deskripsi<span class="req">*</span></label>
+      <textarea id="deskripsi" name="deskripsi" class="in" th:classappend="${errors['deskripsi'] != null} ? 'err'" rows="3" required="required" th:text="${form.deskripsi}"></textarea>
+      <span class="err-msg" th:if="${errors['deskripsi'] != null}" th:text="${errors['deskripsi']}">Error</span>
+    </div>
+    <div class="kv-grid">
+      <div class="field">
+        <label class="lbl" for="lokasi">Lokasi ditemukan<span class="req">*</span></label>
+        <input id="lokasi" name="lokasi" class="in" th:classappend="${errors['lokasi'] != null} ? 'err'" type="text" required="required" maxlength="255" th:value="${form.lokasi}"/>
+        <span class="err-msg" th:if="${errors['lokasi'] != null}" th:text="${errors['lokasi']}">Error</span>
+      </div>
+      <div class="field">
+        <label class="lbl" for="tanggal">Tanggal ditemukan<span class="req">*</span></label>
+        <input id="tanggal" name="tanggal" class="in" th:classappend="${errors['tanggal'] != null} ? 'err'" type="date" required="required" th:max="${hariIni}" th:value="${form.tanggal}"/>
+        <span class="err-msg" th:if="${errors['tanggal'] != null}" th:text="${errors['tanggal']}">Error</span>
+      </div>
+    </div>
+    <div class="notice">
+      <svg class="ic"><use href="#i-info"/></svg>
+      <span>Barang yang dicatat di sini langsung masuk Inventaris Posko dan disimpan di <b th:text="${posko.lokasi}">Posko FIK</b>.</span>
+    </div>
+    <div class="field">
+      <span class="lbl">Foto barang <span class="hint">(opsional, PNG/JPG maks. 5 MB)</span></span>
+      <label class="drop" th:classappend="${errors['foto'] != null} ? 'err'">
+        <span class="ic-up"><svg class="ic"><use href="#i-up"/></svg></span>
+        <span class="nm" data-default="Klik untuk memilih foto">Klik untuk memilih foto</span>
+        <input type="file" name="foto" accept="image/png,image/jpeg"/>
+      </label>
+      <span class="err-msg file-msg" th:if="${errors['foto'] != null}" th:text="${errors['foto']}">Error</span>
+    </div>
+    <div class="form-actions">
+      <a class="btn s" th:href="@{/admin/inventaris}">Batal</a>
+      <button type="submit" class="btn p" data-loading="Menyimpan...">Simpan Barang</button>
+    </div>
+  </form>
+</th:block>
+</body>
+</html>
